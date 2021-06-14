@@ -48,8 +48,8 @@ class OhioBgcProvider(BgcProviderInterface):
             dtime = datetime.strptime(
                 glucose_event.attrib['ts'], '%d-%m-%Y %H:%M:%S')
             delta = dtime - base_time
-            array_time = (abs(delta.days) * 24 +
-                          round(((dtime - base_time).seconds) / 3600, 2))
+            array_time = (
+                abs(delta.days) * 24 + round(((dtime - base_time).seconds) / 3600, 2))
             array_value = int(glucose_event.attrib['value'])
             data_array.append([array_time, array_value])
         df = pd.DataFrame(data=data_array, columns=['time', 'bg_value'])
