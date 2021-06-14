@@ -6,7 +6,8 @@ import pandas as pd
 # import matplotlib.pyplot as plt
 # from lxml import objectify
 # from datetime import datetime
-# from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+from src.bgc_providers.aida_bgc_provider import AidaBgcProvider
 
 
 def slice_df(dataframe, index, number):
@@ -24,11 +25,17 @@ def aida_dataframe(aida_no=6359):
 
 if __name__ == '__main__':
     print('test')
+    provider = AidaBgcProvider()
+    # print(provider.get_glycose_levels())
+    print(provider.tsfresh_dataframe())
+    # stream = provider.simulate_glucose_stream()
+    # print(next(stream))
+    # print(next(stream))
     # df = ohio_dataframe()
     # print(df)
-    # provider = OhioBgcProvider()
-    # df2 = provider.tsfresh_dataframe(trunc=12)
-    # print(df2)
+    provider2 = OhioBgcProvider()
+    df2 = provider2.tsfresh_dataframe()
+    print(df2)
 
     # master = create_feature_dataframe(df2, 10)
     # print(master)
