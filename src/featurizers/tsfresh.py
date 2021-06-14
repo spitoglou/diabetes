@@ -24,6 +24,9 @@ class TsfreshFeaturizer():
         self.hide_progressbars = hide_progressbars
         self.plot_chunks = plot_chunks
         self.horizon = horizon
+        self.feature_dataframe = None
+        self.target_series = None
+        self.labeled_dataframe = None
 
     def slice_df(self, dataframe, index, number):
         return dataframe[index:index + number]
@@ -78,9 +81,10 @@ class TsfreshFeaturizer():
 
         master.reset_index(inplace=True)
         master.drop(['index'], axis=1, inplace=True)
-        return master
+        self.feature_dataframe = master
+        # return master
 
-    def create_target_array(self):
+    def create_target_series(self):
         """Creates target vector
 
         Parameters:
@@ -97,9 +101,13 @@ class TsfreshFeaturizer():
         #     chunks = initial_df.shape[0] - size + 1 - window
         array = [self.timeseries_df.loc[(
             i + self.chunk_size - 1 + self.horizon)].bg_value for i in range(self.chunks)]
-        return pd.Series(array)
+        self.target_series = pd.Series(array)
 
     def create_labeled_dataframe(self):
-        df = self.create_feature_dataframe()
-        df['label'] = self.create_target_array()
-        return df
+        if not self.feature_dataframe:
+            self.create_feature_dataframe()
+        if not self.target_series:
+            self.create_target_series()
+        df = self.feature_dataframe
+        df['label'] = self.target_series
+        self.labeled_dataframe = df
