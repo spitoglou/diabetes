@@ -39,10 +39,10 @@ if __name__ == '__main__':
     # df = ohio_dataframe()
     # print(df)
     provider2 = OhioBgcProvider()
-    df = provider2.tsfresh_dataframe()
+    df = provider2.tsfresh_dataframe(trunc=2000)
     print(df)
 
-    ts = TsfreshFeaturizer(df, 10, 1)
+    ts = TsfreshFeaturizer(df, 6, 1, minimal_features=False)
     ts.create_labeled_dataframe()
 
     df2 = ts.labeled_dataframe
