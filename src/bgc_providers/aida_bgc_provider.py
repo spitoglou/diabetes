@@ -32,9 +32,10 @@ class AidaBgcProvider(BgcProviderInterface):
             yield values
             # sleep(1)
 
-    def tsfresh_dataframe(self, trunc=100):
+    def tsfresh_dataframe(self, truncate=0):
         df = self.get_glycose_levels()
-        df = df[:trunc]
+        if truncate:
+            df = df[:truncate]
         df['id'] = 'a'
         df.plot('time', 'bg_value')
         plt.show()

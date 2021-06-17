@@ -12,5 +12,5 @@ class BgcProviderInterface(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def tsfresh_dataframe(self, trunc=100):
+    def tsfresh_dataframe(self, truncate=0):
         pass
