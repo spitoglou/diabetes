@@ -1,62 +1,57 @@
-import pandas as pd
-# from tqdm import trange
-# from tsfresh import extract_features
-# from tsfresh.feature_extraction import (ComprehensiveFCParameters,
-# MinimalFCParameters)
+from src.helpers.experiment import create_tsfresh_dataframe
+from src.helpers.diabetes.cega import clarke_error_grid
+from pycaret.regression import setup, create_model, compare_models, predict_model
+from loguru import logger
+import warnings
 # import matplotlib.pyplot as plt
-# from lxml import objectify
-# from datetime import datetime
-from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
-# from src.bgc_providers.aida_bgc_provider import AidaBgcProvider
-from src.featurizers.tsfresh import TsfreshFeaturizer
-from src.helpers.dataframe import save_df, read_df
 
-
-def slice_df(dataframe, index, number):
-    return dataframe[index:index + number]
-
-
-def aida_dataframe(aida_no=6359):
-    source_file = 'data/aida/glucose' + str(aida_no) + '.dat'
-    df = pd.read_table(source_file, header=None, names=['time', 'bg_value'])
-    df['id'] = 'a'
-    # df.plot('time', 'bg_value')
-    # plt.show()
-    return df
-
+warnings.filterwarnings("ignore")
 
 if __name__ == '__main__':
-    print('test')
-    # provider = AidaBgcProvider()
-    # print(provider.get_glycose_levels())
-    # print(provider.tsfresh_dataframe())
+    parameters = {
+        'ohio_no': 559,
+        'scope': 'train',
+        'train_ds_size': 3000,
+        'window_size': 6,
+        'prediction_horizon': 1,
+        'minimal_features': False,
+    }
 
-    
-
-    # stream = provider.simulate_glucose_stream()
-    # print(next(stream))
-    # print(next(stream))
-    # df = ohio_dataframe()
-    # print(df)
-    provider2 = OhioBgcProvider()
-    df = provider2.tsfresh_dataframe(trunc=2000)
-    print(df)
-
-    ts = TsfreshFeaturizer(df, 6, 1, minimal_features=False)
-    ts.create_labeled_dataframe()
-
-    df2 = ts.labeled_dataframe
-    print(df2)
-    save_df(df2)
-
+    df2 = create_tsfresh_dataframe(parameters)
     df3 = df2.drop(columns=['start', 'end', 'start_time', 'end_time'])
+    df3
 
-    save_df(df3, 'for_pycaret.pkl')
+    exp_reg = setup(df3,
+                    target='label',
+                    feature_selection=True,
+                    html=False,
+                    silent=True
+                    )
 
-    # master = create_feature_dataframe(df2, 10)
-    # print(master)
+    best3 = compare_models(
+        exclude=['catboost', 'xgboost'],
+        sort='RMSE',
+        n_select=3,
+        # verbose=False
+    )
+    logger.info(best3)
 
-    # print(create_target_array(df2, 10))
+    model = create_model('et', verbose=False)
+    print(model)
+    pd = predict_model(model)
 
-    # df = read_df()
-    # print(df)
+    (plot, res) = clarke_error_grid(pd['label'], pd['Label'], 'Test')
+    logger.info(res)
+    plot.show()
+    # test_parameters = {
+    #     'ohio_no': 559,
+    #     'scope': 'test',
+    #     'train_ds_size': 100000,
+    #     'window_size': 6,
+    #     'prediction_horizon': 1,
+    #     'minimal_features': False,
+    # }
+    # df4 = create_tsfresh_dataframe(test_parameters)
+    # df6 = df4.drop(columns=['start', 'end', 'start_time', 'end_time'])
+    # pd2 = predict_model(model, data=df6)
+    # clarke_error_grid(pd2['label'], pd2['Label'], 'Test')
