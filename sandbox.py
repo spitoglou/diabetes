@@ -1,27 +1,23 @@
 from src.helpers.experiment import create_tsfresh_dataframe
 from src.helpers.diabetes.cega import clarke_error_grid
+from src.helpers.diabetes.madex import mean_adjusted_exponent_error
 from pycaret.regression import setup, create_model, compare_models, predict_model
 from loguru import logger
 import warnings
+import numpy as np
+from sklearn.metrics import mean_squared_error
 # import matplotlib.pyplot as plt
 
 warnings.filterwarnings("ignore")
 
-if __name__ == '__main__':
-    parameters = {
-        'ohio_no': 559,
-        'scope': 'train',
-        'train_ds_size': 3000,
-        'window_size': 6,
-        'prediction_horizon': 1,
-        'minimal_features': False,
-    }
 
-    df2 = create_tsfresh_dataframe(parameters)
-    df3 = df2.drop(columns=['start', 'end', 'start_time', 'end_time'])
-    df3
+def run_experiment(train_parameters, unseen_data_parameters):
 
-    exp_reg = setup(df3,
+    source_df = create_tsfresh_dataframe(train_parameters)
+    clean_df = source_df.drop(
+        columns=['start', 'end', 'start_time', 'end_time'])
+
+    exp_reg = setup(clean_df,
                     target='label',
                     feature_selection=True,
                     html=False,
@@ -34,24 +30,51 @@ if __name__ == '__main__':
         n_select=3,
         # verbose=False
     )
-    logger.info(best3)
 
-    model = create_model('et', verbose=False)
-    print(model)
-    pd = predict_model(model)
+    for selected_model in best3:
+        output = {}
+        model = create_model(selected_model)
+        output['model'] = model
+        pd = predict_model(model)
+        (_, res) = clarke_error_grid(pd['label'], pd['Label'], 'Test')
+        output['internal_cga_analysis'] = res
+        rmse = np.sqrt(mean_squared_error(pd['label'], pd['Label']))
+        rmadex = np.sqrt(mean_adjusted_exponent_error(
+            pd['label'], pd['Label']))
+        output['internal_rmese'] = rmse
+        output['internal_rmadex'] = rmadex
 
-    (plot, res) = clarke_error_grid(pd['label'], pd['Label'], 'Test')
-    logger.info(res)
-    plot.show()
-    # test_parameters = {
-    #     'ohio_no': 559,
-    #     'scope': 'test',
-    #     'train_ds_size': 100000,
-    #     'window_size': 6,
-    #     'prediction_horizon': 1,
-    #     'minimal_features': False,
-    # }
-    # df4 = create_tsfresh_dataframe(test_parameters)
-    # df6 = df4.drop(columns=['start', 'end', 'start_time', 'end_time'])
-    # pd2 = predict_model(model, data=df6)
-    # clarke_error_grid(pd2['label'], pd2['Label'], 'Test')
+        unseen_df = create_tsfresh_dataframe(unseen_data_parameters)
+        clean_unseen_df = unseen_df.drop(
+            columns=['start', 'end', 'start_time', 'end_time'])
+        unseen_pd = predict_model(model, data=clean_unseen_df)
+        (_, res) = clarke_error_grid(unseen_pd['label'], unseen_pd['Label'], 'Test')
+        output['unseen_cga_analysis'] = res
+        rmse = np.sqrt(mean_squared_error(unseen_pd['label'], unseen_pd['Label']))
+        rmadex = np.sqrt(mean_adjusted_exponent_error(
+            unseen_pd['label'], unseen_pd['Label']))
+        output['unseen_rmese'] = rmse
+        output['unseen_rmadex'] = rmadex
+        logger.info(output)
+
+
+if __name__ == '__main__':
+    parameters = {
+        'ohio_no': 559,
+        'scope': 'train',
+        'train_ds_size': 0,
+        'window_size': 6,
+        'prediction_horizon': 1,
+        'minimal_features': False,
+    }
+
+    test_parameters = {
+        'ohio_no': 559,
+        'scope': 'test',
+        'train_ds_size': 100000,
+        'window_size': 6,
+        'prediction_horizon': 1,
+        'minimal_features': False,
+    }
+
+    run_experiment(parameters, test_parameters)
