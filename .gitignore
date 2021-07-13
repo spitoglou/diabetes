@@ -6,3 +6,4 @@ src/bgc_providers/ohio_bgc_provider.py
 .ipynb_checkpoints
 .pytest_cache
 catboost_info/
+*.log

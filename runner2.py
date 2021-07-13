@@ -4,16 +4,29 @@ from src.helpers.diabetes.madex import mean_adjusted_exponent_error
 from pycaret.regression import setup, create_model, compare_models, predict_model, get_config, pull
 import matplotlib.pyplot as plt
 from loguru import logger
-import warnings
 import numpy as np
 from sklearn.metrics import mean_squared_error
-import pandas
+# import pandas
 from pprint import pprint
+import sys
 
 
 class Experiment():
 
-    def __init__(self, patient, window, horizon, min_per_measure: int = 5, best_models_no: int = 3, speed: int = 3, minimal_features: bool = False) -> None:
+    def __init__(self,
+                 patient: int, window: int, horizon: int,
+                 min_per_measure: int = 5,
+                 best_models_no: int = 3,
+                 speed: int = 3,
+                 log_type: str = 'standard',
+                 minimal_features: bool = False) -> None:
+
+        logger.remove()
+        if log_type == 'standard':
+            logger.add(sys.stderr)
+        if log_type == 'file':
+            logger.add('logger.log')
+
         self.patient = patient
         self.window = window
         self.horizon = horizon
@@ -21,6 +34,7 @@ class Experiment():
         self.hor_min = horizon * min_per_measure
         self.best_models_no = best_models_no
         self.speed = speed
+        self.logger = logger
         self.train_parameters = {
             'ohio_no': patient,
             'scope': 'train',
@@ -110,21 +124,24 @@ class Experiment():
         (self.unseen_cega_fig, self.unseen_cega_res, self.unseen_rmse,
          self.unseen_rmadex) = self.calculate_prediction(model=model, custom_data=self.unseen_data_df, legend=legend)
 
+    def run_experiment(self):
+        self.create_train_dataframe()
+        self.setup_regressor()
+        self.log_regressor_param('prep_pipe')
+        self.compute_best_n_models(verbose=False)
+        print(self.models_comparison_df)
+        self.log_best_models()
+        self.predict_holdout()
+        logger.info(self.holdout_cega_res)
+        logger.info(self.holdout_rmse)
+        logger.info(self.holdout_rmadex)
+        self.predict_unseen()
+        logger.info(self.unseen_cega_res)
+        logger.info(self.unseen_rmse)
+        logger.info(self.unseen_rmadex)
+
 
 if __name__ == '__main__':
-    exp = Experiment(559, 12, 6)
-    exp.create_train_dataframe()
-    exp.setup_regressor()
-    exp.log_regressor_param('prep_pipe')
-    exp.compute_best_n_models(verbose=False)
-    print(exp.models_comparison_df)
-    exp.log_best_models()
-    exp.predict_holdout()
-    logger.info(exp.holdout_cega_res)
-    logger.info(exp.holdout_rmse)
-    logger.info(exp.holdout_rmadex)
-    exp.predict_unseen()
-    logger.info(exp.unseen_cega_res)
-    logger.info(exp.unseen_rmse)
-    logger.info(exp.unseen_rmadex)
+    exp = Experiment(559, 12, 6, log_type='file')
+    exp.run_experiment()
     pprint(exp.__dict__)
