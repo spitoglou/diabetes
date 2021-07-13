@@ -8,6 +8,7 @@ import warnings
 import numpy as np
 from sklearn.metrics import mean_squared_error
 import pandas
+from pprint import pprint
 
 
 class Experiment():
@@ -126,4 +127,4 @@ if __name__ == '__main__':
     logger.info(exp.unseen_cega_res)
     logger.info(exp.unseen_rmse)
     logger.info(exp.unseen_rmadex)
-    print(exp.__dict__)
+    pprint(exp.__dict__)
