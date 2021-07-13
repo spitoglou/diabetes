@@ -19,7 +19,7 @@ def create_tsfresh_dataframe(p):
     logger.info(p)
     df = provider.tsfresh_dataframe(truncate=p['train_ds_size'])
     if path.exists(ds_name):
-        logger.info('Found existing picle file. Continuing...')
+        logger.info('Found existing pickle file. Continuing...')
         out = read_df(ds_name)
     else:
         ts = TsfreshFeaturizer(

@@ -9,6 +9,7 @@ from sklearn.metrics import mean_squared_error
 # import pandas
 from pprint import pprint
 import sys
+import time
 
 
 class Experiment():
@@ -125,6 +126,7 @@ class Experiment():
          self.unseen_rmadex) = self.calculate_prediction(model=model, custom_data=self.unseen_data_df, legend=legend)
 
     def run_experiment(self):
+        start_time = time.time()
         self.create_train_dataframe()
         self.setup_regressor()
         self.log_regressor_param('prep_pipe')
@@ -139,6 +141,7 @@ class Experiment():
         logger.info(self.unseen_cega_res)
         logger.info(self.unseen_rmse)
         logger.info(self.unseen_rmadex)
+        logger.info(f'Execution Time: {(time.time() - start_time)}')
 
 
 if __name__ == '__main__':
