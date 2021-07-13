@@ -8,6 +8,9 @@ from loguru import logger
 import numpy as np
 from sklearn.metrics import mean_squared_error
 # import pandas
+import warnings
+
+warnings.filterwarnings('ignore')
 
 
 def run(patient, window, horizon):
@@ -49,7 +52,7 @@ def run(patient, window, horizon):
     print(get_config('X').columns)
 
     best3 = compare_models(
-        exclude=['catboost', 'xgboost', 'et', 'rf', 'ada', 'gbr'],
+        exclude=['catboost', 'xgboost'],
         sort='RMSE',
         n_select=3,
         verbose=True
