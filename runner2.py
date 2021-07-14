@@ -57,12 +57,29 @@ class Experiment():
     def create_dataframe(self, parameters: dict):
         return create_tsfresh_dataframe(parameters)
 
+    def remove_gaps(self, df):
+        # clean wrong values due to measure gaps
+        # print(df[200:300])
+        problematic_points = []
+        old_value = 0
+        for index, row in df.iterrows():
+            # logger.debug(row['start_time'])
+            if (row['end_time'] - old_value) > 1:
+                problematic_points.append(index)
+            old_value = row['end_time']
+        logger.warning(problematic_points)
+        for point in problematic_points:
+            for i in range(-1 * self.horizon, self.window):
+                df.drop(point + i, inplace=True)
+        return df
+
     def create_train_dataframe(self):
-        self.train_df = self.create_dataframe(self.train_parameters)
+        self.train_df = self.remove_gaps(
+            self.create_dataframe(self.train_parameters))
 
     def create_unseen_data_dataframe(self):
-        self.unseen_data_df = self.create_dataframe(
-            self.unseen_data_parameters)
+        self.unseen_data_df = self.remove_gaps(self.create_dataframe(
+            self.unseen_data_parameters))
 
     def setup_regressor(self):
         self.regressor = setup(self.train_df,
@@ -104,13 +121,15 @@ class Experiment():
         if not model:
             model = self.best_models[0]
         pd = predict_model(model, data=custom_data)
-        # print(pull())
+
+        # workaround for indexing cega and madex problems
+        cega_pd = pd.reset_index(drop=True)
         (fig, res) = clarke_error_grid(
-            pd['label'], pd['Label'], legend)
+            cega_pd['label'], cega_pd['Label'], legend)
         rmse = np.sqrt(
             mean_squared_error(pd['label'], pd['Label']))
         rmadex = np.sqrt(mean_adjusted_exponent_error(
-            pd['label'], pd['Label']))
+            cega_pd['label'], cega_pd['Label']))
         return (fig, res, rmse, rmadex)
 
     def predict_holdout(self, model=None):
@@ -145,6 +164,8 @@ class Experiment():
 
 
 if __name__ == '__main__':
-    exp = Experiment(559, 12, 6, log_type='file')
+    exp = Experiment(559, 12, 6, log_type='standard')
+    # exp.create_train_dataframe()
+    # exp.remove_gaps(exp.train_df)
     exp.run_experiment()
     pprint(exp.__dict__)
