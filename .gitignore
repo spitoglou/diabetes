@@ -7,3 +7,4 @@ src/bgc_providers/ohio_bgc_provider.py
 .pytest_cache
 catboost_info/
 *.log
+.neptune/
