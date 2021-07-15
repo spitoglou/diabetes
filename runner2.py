@@ -11,6 +11,7 @@ from sklearn.metrics import mean_squared_error
 import sys
 import time
 import neptune.new as neptune
+import typer
 
 
 class Experiment():
@@ -180,7 +181,8 @@ class Experiment():
         self.log_regressor_param('prep_pipe')
         self.compute_best_n_models(verbose=False)
         print(self.models_comparison_df)
-        self.neptune['model/comparison'].upload(neptune.types.File.as_html(self.models_comparison_df))
+        self.neptune['model/comparison'].upload(
+            neptune.types.File.as_html(self.models_comparison_df))
         self.log_best_models()
         self.predict_holdout()
         # plt.show()
@@ -205,12 +207,16 @@ class Experiment():
         self.neptune.stop()
 
 
-if __name__ == '__main__':
-    exp = Experiment(559, 12, 6,
-                     perform_gap_corrections=True,
-                     speed=3,
+def main(patient: int, window: int, horizon: int, speed: int = 3, fix_gaps: bool = True):
+    exp = Experiment(patient, window, horizon,
+                     perform_gap_corrections=fix_gaps,
+                     speed=speed,
                      log_type='standard')
     # exp.create_train_dataframe()
     # exp.remove_gaps(exp.train_df)
     exp.run_experiment()
     # pprint(exp.__dict__)
+
+
+if __name__ == '__main__':
+    typer.run(main)
