@@ -13,11 +13,11 @@ def create_ds_name(parameters):
     return ds_name
 
 
-def create_tsfresh_dataframe(p):
+def create_tsfresh_dataframe(p, show_plt=False):
     ds_name = create_ds_name(p)
     provider = OhioBgcProvider(scope=p['scope'], ohio_no=p['ohio_no'])
     logger.info(p)
-    df = provider.tsfresh_dataframe(truncate=p['train_ds_size'])
+    df = provider.tsfresh_dataframe(truncate=p['train_ds_size'], show_plt=show_plt)
     if path.exists(ds_name):
         logger.info('Found existing pickle file. Continuing...')
         out = read_df(ds_name)

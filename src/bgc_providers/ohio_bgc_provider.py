@@ -37,7 +37,7 @@ class OhioBgcProvider(BgcProviderInterface):
             yield values
             # sleep(1)
 
-    def tsfresh_dataframe(self, truncate=0):
+    def tsfresh_dataframe(self, truncate=0, show_plt=False):
         data = self.get_glycose_levels()
         base_time_string = data[0].attrib['ts']
         base_time = datetime.strptime(base_time_string, '%d-%m-%Y %H:%M:%S')
@@ -56,6 +56,7 @@ class OhioBgcProvider(BgcProviderInterface):
         if truncate:
             df = df[:truncate]
         df['id'] = 'a'
-        df.plot('time', 'bg_value')
-        plt.show()
+        if show_plt:
+            df.plot('time', 'bg_value')
+            plt.show()
         return df
