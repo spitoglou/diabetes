@@ -6,6 +6,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
+def get_part_of_day(hour):
+    return (
+        "morning" if 7 <= hour <= 11
+        else
+        "afternoon" if 12 <= hour <= 16
+        else
+        "evening" if 16 <= hour <= 20
+        else
+        "night" if 21 <= hour <= 23
+        else
+        "late night"
+    )
+
+
 class OhioBgcProvider(BgcProviderInterface):
 
     def __init__(self, scope='train', ohio_no='559'):
@@ -47,12 +61,14 @@ class OhioBgcProvider(BgcProviderInterface):
             # print(glucose_event.attrib)
             dtime = datetime.strptime(
                 glucose_event.attrib['ts'], '%d-%m-%Y %H:%M:%S')
+            time_of_day = dtime.time()
+            part_of_day = get_part_of_day(time_of_day.hour)
             delta = dtime - base_time
             array_time = (
                 abs(delta.days) * 24 + round(((dtime - base_time).seconds) / 3600, 2))
             array_value = int(glucose_event.attrib['value'])
-            data_array.append([array_time, array_value])
-        df = pd.DataFrame(data=data_array, columns=['time', 'bg_value'])
+            data_array.append([time_of_day, part_of_day, array_time, array_value])
+        df = pd.DataFrame(data=data_array, columns=['time_of_day', 'part_of_day', 'time', 'bg_value'])
         if truncate:
             df = df[:truncate]
         df['id'] = 'a'
