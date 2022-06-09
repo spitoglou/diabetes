@@ -15,7 +15,8 @@ class TsfreshFeaturizer():
                  hide_progressbars=True,
                  minimal_features=True,
                  plot_chunks=False) -> None:
-        self.timeseries_df = timeseries_df
+        self.raw_timeseries_df = timeseries_df
+        self.timeseries_df = timeseries_df[['time', 'bg_value', 'id']]
         self.chunks = timeseries_df.shape[0] - chunk_size + 1 - horizon
         self.chunk_size = chunk_size
         self.parameters = ComprehensiveFCParameters()
@@ -73,10 +74,14 @@ class TsfreshFeaturizer():
             chunk_features['start_time'] = self.timeseries_df.loc[i].time
             chunk_features['end_time'] = (
                 self.timeseries_df.loc[i + self.chunk_size - 1].time)
+            chunk_features['start_time_of_day'] = self.raw_timeseries_df.loc[i].time_of_day
+            chunk_features['end_time_of_day'] = (
+                self.raw_timeseries_df.loc[i + self.chunk_size - 1].time_of_day)
+            chunk_features['part_of_day'] = self.raw_timeseries_df.loc[i].part_of_day
 
             # display(chunk_features)
-            master = chunk_features if not i else pd.concat(
-                [master, chunk_features])
+            master = pd.concat([master, chunk_features]) if i else chunk_features
+
             # master.loc[i] = chunk_features
 
         master.reset_index(inplace=True)
