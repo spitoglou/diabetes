@@ -62,13 +62,14 @@ class OhioBgcProvider(BgcProviderInterface):
             dtime = datetime.strptime(
                 glucose_event.attrib['ts'], '%d-%m-%Y %H:%M:%S')
             time_of_day = dtime.time()
+            mock_date = dtime.date()
             part_of_day = get_part_of_day(time_of_day.hour)
             delta = dtime - base_time
             array_time = (
                 abs(delta.days) * 24 + round(((dtime - base_time).seconds) / 3600, 2))
             array_value = int(glucose_event.attrib['value'])
-            data_array.append([time_of_day, part_of_day, array_time, array_value])
-        df = pd.DataFrame(data=data_array, columns=['time_of_day', 'part_of_day', 'time', 'bg_value'])
+            data_array.append([dtime, mock_date, time_of_day, part_of_day, array_time, array_value])
+        df = pd.DataFrame(data=data_array, columns=['date_time', 'mock_date', 'time_of_day', 'part_of_day', 'time', 'bg_value'])
         if truncate:
             df = df[:truncate]
         df['id'] = 'a'
