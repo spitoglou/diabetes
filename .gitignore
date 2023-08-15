@@ -9,3 +9,5 @@ catboost_info/
 *.log
 .neptune/
 old_dataframes/
+excel_dataframes/*.xlsx
+config/mongo_config.py

@@ -4,6 +4,7 @@ from tsfresh import extract_features
 from tsfresh.feature_extraction import (ComprehensiveFCParameters,
                                         MinimalFCParameters)
 import matplotlib.pyplot as plt
+from loguru import logger
 
 
 class TsfreshFeaturizer():
@@ -109,10 +110,19 @@ class TsfreshFeaturizer():
         self.target_series = pd.Series(array)
 
     def create_labeled_dataframe(self):
-        if not self.feature_dataframe:
+        # if not self.feature_dataframe:
+        #     self.create_feature_dataframe()
+        # if not self.target_series:
+        #     self.create_target_series()
+        try: 
+            f_df = self.feature_dataframe
+        except Exception as e:
+            logger.warning(e)
             self.create_feature_dataframe()
-        if not self.target_series:
+        try:
+            t_series = self.target_series
+        except Exception as e:
+            logger.warning(e)
             self.create_target_series()
-        df = self.feature_dataframe
-        df['label'] = self.target_series
-        self.labeled_dataframe = df
+        f_df['label'] = t_series
+        self.labeled_dataframe = f_df
