@@ -13,6 +13,7 @@ from pycaret.regression import (
     pull,
     add_metric,
     dashboard,
+    save_model
 )  # create_model,
 import matplotlib.pyplot as plt
 import numpy as np
@@ -150,6 +151,7 @@ class Experiment:
         return df
 
     def remove_missing_and_inf(self, df):
+        # sourcery skip: extract-duplicate-method
         print("Original Dataframe")
         print(df.shape)
         df.dropna(axis=1, inplace=True)
@@ -234,7 +236,9 @@ class Experiment:
         self.models_comparison_df = pull()
 
     def log_best_models(self):
+        import uuid
         for index, model in enumerate(self.best_models):
+            save_model(model, f'models/{self.patient}_{self.window}_{self.horizon}_{index+1}_{self.get_model_name(model.__str__())}_{uuid.uuid4()}')
             logger.info(f"Model {(index+1)}:")
             logger.info(model)
 
