@@ -7,10 +7,17 @@ import matplotlib.pyplot as plt
 
 
 def get_part_of_day(hour):
+    """
+    The function `get_part_of_day` returns a string indicating the part of the day based on the given
+    hour.
+    
+    :param hour: The parameter "hour" represents the hour of the day in a 24-hour format
+    :return: a string indicating the part of the day based on the given hour.
+    """
     return (
         "morning" if 7 <= hour <= 11
         else
-        "afternoon" if 12 <= hour <= 16
+        "afternoon" if 12 <= hour <= 15
         else
         "evening" if 16 <= hour <= 20
         else
@@ -52,6 +59,21 @@ class OhioBgcProvider(BgcProviderInterface):
             # sleep(1)
 
     def tsfresh_dataframe(self, truncate=0, show_plt=False):
+        """
+        The function `tsfresh_dataframe` takes in glucose level data, processes it, and returns a pandas
+        DataFrame with additional columns for date, time, part of day, and time difference from a base
+        time.
+        
+        :param truncate: The `truncate` parameter is used to specify the number of rows to keep in the
+        resulting DataFrame. If a value is provided, the DataFrame will be truncated to that number of
+        rows. If no value is provided or if the value is 0, the DataFrame will not be truncated,
+        defaults to 0 (optional)
+        :param show_plt: The `show_plt` parameter is a boolean flag that determines whether or not to
+        display a plot of the data using `matplotlib.pyplot`. If `show_plt` is set to `True`, the
+        function will generate a plot of the 'bg_value' column against the 'time' column and, defaults
+        to False (optional)
+        :return: a pandas DataFrame object.
+        """
         data = self.get_glycose_levels()
         base_time_string = data[0].attrib['ts']
         base_time = datetime.strptime(base_time_string, '%d-%m-%Y %H:%M:%S')

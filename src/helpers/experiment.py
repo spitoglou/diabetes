@@ -1,6 +1,6 @@
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
 
-# from src.bgc_providers.aida_bgc_provider import AidaBgcProvider
+# ?from src.bgc_providers.aida_bgc_provider import AidaBgcProvider
 from src.featurizers.tsfresh import TsfreshFeaturizer
 from src.helpers.dataframe import save_df, read_df
 from os import path
@@ -42,8 +42,6 @@ def timeseries_dataframe(p, show_plt=False):
 
 def create_tsfresh_dataframe(p, show_plt=False):
     ds_name = create_ds_name(p)
-    # provider = OhioBgcProvider(scope=p['scope'], ohio_no=p['ohio_no'])
-    # logger.info(p)
     df = timeseries_dataframe(p, show_plt)
     if path.exists(ds_name):
         logger.info("Found existing pickle file. Continuing...")
@@ -197,12 +195,12 @@ class Experiment:
                 "start_time_of_day",
                 "end_time_of_day",
             ],
-            #  ignore_low_variance=True,
             html=False,
-            #  silent=True,
             verbose=False,
-            #  profile=True,
             session_id=1974,
+            #  ignore_low_variance=True,
+            #  silent=True,
+            #  profile=True,
         )
 
     def get_regressor_param(self, param: str):
@@ -228,6 +226,7 @@ class Experiment:
         add_metric("rmadex", "RMADEX", rmadex, False)
         self.best_models = compare_models(
             exclude=exc_dict[self.speed],
+            # RMSE sort
             # sort='RMSE',
             sort="RMADEX",
             n_select=self.best_models_no,
