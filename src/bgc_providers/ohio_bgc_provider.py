@@ -47,11 +47,15 @@ class OhioBgcProvider(BgcProviderInterface):
 
     def ts_to_timestamp(self, ts):
         return self.ts_to_datetime(ts).replace(tzinfo=timezone.utc).timestamp()
+    
+    def ts_to_iso(self, ts):
+        return self.ts_to_datetime(ts).replace(tzinfo=timezone.utc).isoformat()
 
     def simulate_glucose_stream(self, shift=0):
         for glucose_event in self.get_glycose_levels(shift):
             logger.info(glucose_event.attrib)
-            values = {'time': self.ts_to_timestamp(glucose_event.attrib['ts'])}
+            values = {'timestamp': self.ts_to_timestamp(glucose_event.attrib['ts'])}
+            values['time'] = self.ts_to_iso(glucose_event.attrib['ts'])
             values['value'] = float(glucose_event.attrib['value'])
             # TODO: This is mock
             values['patient'] = self.patient
