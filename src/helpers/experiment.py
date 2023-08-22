@@ -149,6 +149,14 @@ class Experiment:
         return df
 
     def remove_missing_and_inf(self, df):
+        """
+        The function removes columns with missing values and infinite values from a dataframe, renames
+        the columns to remove special characters, and returns the modified dataframe.
+        
+        :param df: The parameter `df` is a pandas DataFrame that represents the original data
+        :return: the modified dataframe after removing columns with NaNs and infinites, and renaming the
+        columns to remove special characters.
+        """
         # sourcery skip: extract-duplicate-method
         print("Original Dataframe")
         print(df.shape)
@@ -175,6 +183,10 @@ class Experiment:
         return df
 
     def create_train_dataframe(self):
+        """
+        The function creates a training dataframe by removing gaps and creating a dataframe using the
+        given train parameters.
+        """
         self.train_df = self.remove_gaps(self.create_dataframe(self.train_parameters))
 
     def create_unseen_data_dataframe(self):
