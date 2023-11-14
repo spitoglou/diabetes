@@ -13,8 +13,11 @@ from pycaret.regression import (
     pull,
     add_metric,
     dashboard,
-    save_model
+    save_model,
 )  # create_model,
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -131,7 +134,7 @@ class Experiment:
             }
 
     def create_dataframe(self, parameters: dict):
-        return self.remove_missing_and_inf(create_tsfresh_dataframe(parameters))
+        return self.fix_names(self.remove_missing_and_inf(create_tsfresh_dataframe(parameters)))
 
     def remove_gaps(self, df):
         if self.perform_gap_corrections:
@@ -152,7 +155,7 @@ class Experiment:
         """
         The function removes columns with missing values and infinite values from a dataframe, renames
         the columns to remove special characters, and returns the modified dataframe.
-        
+
         :param df: The parameter `df` is a pandas DataFrame that represents the original data
         :return: the modified dataframe after removing columns with NaNs and infinites, and renaming the
         columns to remove special characters.
@@ -167,6 +170,10 @@ class Experiment:
         df.dropna(axis=1, inplace=True)
         print("Dataframe after removing cols with infinites")
         print(df.shape)
+
+        return df
+
+    def fix_names(self, df):
         # LightGBMError: Do not support special JSON characters in feature name.
         import re
 
@@ -193,6 +200,17 @@ class Experiment:
         self.unseen_data_df = self.remove_gaps(
             self.create_dataframe(self.unseen_data_parameters)
         )
+        
+    def align_dataframe_columns(self):
+        print('--------------------------------------------------')
+        train_df_columns = self.train_df.columns.tolist()
+        unseen_data_df_columns = self.unseen_data_df.columns.tolist()
+        # print(self.train_df.columns.tolist())
+        for train_column in train_df_columns:
+            if train_column not in unseen_data_df_columns:
+                print(f'Dropping {train_column}')
+                self.train_df.drop(train_column, axis=1, inplace=True)
+        print('--------------------------------------------------')
 
     def setup_regressor(self):
         self.regressor = setup(
@@ -248,8 +266,12 @@ class Experiment:
 
     def log_best_models(self):
         import uuid
+
         for index, model in enumerate(self.best_models):
-            save_model(model, f'models/{self.patient}_{self.window}_{self.horizon}_{index+1}_{self.get_model_name(model.__str__())}_{uuid.uuid4()}')
+            save_model(
+                model,
+                f"models/{self.patient}_{self.window}_{self.horizon}_{index+1}_{self.get_model_name(model.__str__())}_{uuid.uuid4()}",
+            )
             logger.info(f"Model {(index+1)}:")
             logger.info(model)
 
@@ -290,7 +312,7 @@ class Experiment:
 
     def predict_unseen(self, model=None):
         legend = f"[{self.patient}]UnseenData_W{(self.window*5)}_H{(self.horizon*5)}"
-        self.create_unseen_data_dataframe()
+        # self.create_unseen_data_dataframe()
         (
             self.unseen_cega_fig,
             self.unseen_cega_res,
@@ -307,6 +329,8 @@ class Experiment:
     def run_experiment(self):
         start_time = time.time()
         self.create_train_dataframe()
+        self.create_unseen_data_dataframe()
+        self.align_dataframe_columns()
         self.setup_regressor()
         self.log_regressor_param("pipeline")
         self.compute_best_n_models(verbose=True)
