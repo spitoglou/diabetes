@@ -4,7 +4,8 @@
 └─┘┴─┘┴└─┘┘└┘ ┴
 Author: Stavros Pitoglou
 """
-from ohio_data import Ohio_Dataset_xml
+from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+from src.helpers.fhir import create_fhir_json_from_reading
 from time import sleep
 import requests
 from loguru import logger
@@ -12,18 +13,27 @@ import json
 
 # logger.disable('')
 
-if __name__ == "__main__":
-    ds = Ohio_Dataset_xml()
-    stream = ds.simulate_glucose_stream()
+
+def stream_data(send_to_service: bool = True, verbose: bool = False):
+    provider = OhioBgcProvider()
+    stream = provider.simulate_glucose_stream()
     try:
         while True:
             values = next(stream)
-            # logger.info(values)
-            r = requests.post(
-                "http://localhost:8000/bg/reading", data=json.dumps(values))
-            logger.info(r.status_code)
-            if r.status_code != 200:
-                logger.warning(r.text)
-            sleep(1)
+            logger.info(values) if verbose else ...
+            payload = create_fhir_json_from_reading(values)
+            logger.info(payload) if verbose else ...
+            if send_to_service:
+                r = requests.post("http://localhost:8000/bg/reading", data=payload)
+                logger.info(r.status_code) if verbose else ...
+                logger.info(r.text) if verbose else ...
+                if r.status_code != 200:
+                    logger.warning(r.text)
+                logger.success(values)
+            sleep(5)
     except KeyboardInterrupt:
-        print('Interrupted by the user')
+        print("Interrupted by the user")
+
+
+if __name__ == "__main__":
+    stream_data(True)

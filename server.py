@@ -8,18 +8,26 @@ Author: Stavros Pitoglou
 from fastapi import FastAPI
 from pydantic import BaseModel
 import uvicorn
-from db import MyDatabase
+from src.mongo import MongoDB
 from loguru import logger
+import json
+import config.server_config as conf
+
+DEBUG = conf.DEBUG
 
 app = FastAPI()
-dbms = MyDatabase("sqlite", dbname="mydb.sqlite")
+dbms = MongoDB()
+dbms.ping()
 
-
-class Bg_value(BaseModel):
-    time: str
-    patient: str
-    value: float
-
+class Fhir(BaseModel):
+    status: str
+    category: list
+    code: dict
+    subject: dict
+    effectiveDateTime: str
+    valueQuantity: dict
+    device: dict
+    
 
 @app.get("/")
 async def root():
@@ -27,13 +35,14 @@ async def root():
 
 
 @app.post("/bg/reading")
-async def post_reading(value: Bg_value):
-    logger.debug(value)
-    query = f"""INSERT INTO bg_values(patient_id, timestamp, type, value)
-    VALUES ('{value.patient}','{value.time}', 'bg', {value.value})
-    """
-    dbms.execute_query(query)
-    return value
+async def post_reading(json_payload:Fhir):
+    if DEBUG:
+        logger.debug(json_payload)
+        logger.debug(json_payload.__dict__)
+    db = dbms.client[conf.DATABASE]
+    cgm_db = db[conf.COLLECTION]
+    rec_id = cgm_db.insert_one(json_payload.__dict__).inserted_id
+    return {'message': f'Success [Record Id : {rec_id}]'}
 
 
 if __name__ == "__main__":
