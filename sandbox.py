@@ -15,4 +15,8 @@ def retrieve_data(limit: int = 200):
 mongo = MongoDB()
 db = mongo.client[DATABASE]
 mongo_collection = db[COLLECTION]
-print(retrieve_data())
+ts_df = retrieve_data()
+print(ts_df)
+
+for index, row in ts_df.iterrows():
+    print(row)
