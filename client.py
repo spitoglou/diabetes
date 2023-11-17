@@ -22,7 +22,7 @@ def stream_data(send_to_service: bool = True, verbose: bool = False):
     try:
         while True:
             values = next(stream)
-            values['time'] = datetime.now().isoformat()
+            # values['time'] = datetime.now().isoformat()
             logger.info(values) if verbose else ...
             payload = create_fhir_json_from_reading(values)
             logger.info(payload) if verbose else ...

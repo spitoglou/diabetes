@@ -31,7 +31,7 @@ class Fhir(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "It Works!!!"}
+    return {"message": "The server is up and running!!!"}
 
 
 @app.post("/bg/reading")
@@ -39,9 +39,11 @@ async def post_reading(json_payload:Fhir):
     if DEBUG:
         logger.debug(json_payload)
         logger.debug(json_payload.__dict__)
+    payload_dict = json_payload.__dict__
     db = dbms.client[conf.DATABASE]
-    cgm_db = db[conf.COLLECTION]
-    rec_id = cgm_db.insert_one(json_payload.__dict__).inserted_id
+    cgm_db = db[f'measurements_{payload_dict["subject"]["identifier"]}']
+    rec_id = cgm_db.insert_one(payload_dict).inserted_id
+    logger.success(rec_id)
     return {'message': f'Success [Record Id : {rec_id}]'}
 
 

@@ -8,15 +8,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from src.mongo import MongoDB
 from config.server_config import DATABASE, COLLECTION
-from loguru import logger
+import loguru as logger
 
 mongo = MongoDB()
 db = mongo.client[DATABASE]
 mongo_collection = db[COLLECTION]
 
 model = load_model(
-    "models/559_6_6_1_LGBMRegressor_9983a67c-632d-4ce3-8098-d73dbe2d145f"
-)
+        "models/559_6_6_1_LGBMRegressor_9983a67c-632d-4ce3-8098-d73dbe2d145f"
+    )
 
 
 def get_part_of_day(hour):
@@ -85,6 +85,37 @@ def predict_last_n(last_n: list, model):
     return prediction
 
 
+def provider_predictions():
+    provider = OhioBgcProvider()
+    measurements = provider.tsfresh_dataframe()
+
+    # stream = pd.DataFrame()
+
+    max_data = 7
+    meas_list = []
+    predictions = []
+    for counter in range(max_data):
+        measurement = measurements.iloc[counter]
+        print(measurement)
+        meas_list.append(measurement)
+        if len(meas_list) >= 6:
+            last_n = meas_list[-6:]
+
+            prediction = predict_last_n(last_n, model)
+
+            predictions.append(
+                {
+                    "prediction_origin_time": measurement.date_time,
+                    "prediction_time": measurement.date_time + timedelta(minutes=6 * 5),
+                    "prediction_value": prediction,
+                }
+            )
+    measurement_df = pd.DataFrame(meas_list)
+    prediction_df = pd.DataFrame(predictions)
+
+    return measurement_df, prediction_df
+
+
 def retrieve_data(mongo_collection, limit: int = 200):
     return pd.DataFrame(list(mongo_collection.find(limit=limit, sort=[("_id", -1)])))
     # sensor_data['timestamp'] = pd.to_datetime(sensor_data['timestamp']).astype(str)
@@ -93,9 +124,15 @@ def retrieve_data(mongo_collection, limit: int = 200):
     # return sensor_data
 
 
-def create_measurements_list(timeseries_df):
+def mongo_predictions():
+    ts_df = retrieve_data(mongo_collection, 10)
+    # reverse dataframe
+    ts_df = ts_df[::-1].reset_index(drop=True)
+    print(ts_df)
+
     meas_list = []
-    for index, row in timeseries_df.iterrows():
+    predictions = []
+    for index, row in ts_df.iterrows():
         print(row)
         # print(row['valueQuantity']['value'])
         # print(pd.to_datetime(row['effectiveDateTime']).timetuple())
@@ -113,24 +150,15 @@ def create_measurements_list(timeseries_df):
         measurement = pd.Series(d)
         meas_list.append(measurement)
     print(meas_list)
-    return meas_list
-
-
-def mongo_predictions(window_steps):
-    ts_df = retrieve_data(mongo_collection, 12)
-    # reverse dataframe
-    ts_df = ts_df[::-1].reset_index(drop=True)
-    print(ts_df)
-
-    meas_list = create_measurements_list(ts_df)
-    last_n = meas_list[-1 * window_steps :]
+    last_n = meas_list[-6:]
     prediction = predict_last_n(last_n, model)
-    prediction = {
-        "prediction_origin_time": measurement.date_time,
-        "prediction_time": measurement.date_time + timedelta(minutes=6 * 5),
-        "prediction_value": prediction,
-    }
-
+    predictions.append(
+        {
+            "prediction_origin_time": measurement.date_time,
+            "prediction_time": measurement.date_time + timedelta(minutes=6 * 5),
+            "prediction_value": prediction,
+        }
+    )
     print(predictions)
     measurement_df = pd.DataFrame(meas_list)
     prediction_df = pd.DataFrame(predictions)
@@ -138,12 +166,13 @@ def mongo_predictions(window_steps):
 
 
 def handle_new_data():
+    
     # # mongo_predictions(model)
 
     measurement_df, prediction_df = mongo_predictions()
 
-
 if __name__ == "__main__":
+    
     # print(prediction_df)
     # ax = prediction_df.plot(y="prediction_value", x="prediction_time")
     # measurement_df.plot(ax=ax, y="bg_value", x="date_time")
