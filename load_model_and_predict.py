@@ -113,34 +113,35 @@ def create_measurements_list(timeseries_df):
         measurement = pd.Series(d)
         meas_list.append(measurement)
     print(meas_list)
-    return meas_list
+    # * "measurement" variable here is the last measurement from the loop above
+    return meas_list, measurement
 
 
-def mongo_predictions(window_steps):
+def mongo_prediction(window_steps):
     ts_df = retrieve_data(mongo_collection, 12)
     # reverse dataframe
     ts_df = ts_df[::-1].reset_index(drop=True)
     print(ts_df)
 
-    meas_list = create_measurements_list(ts_df)
+    meas_list, last_measurement = create_measurements_list(ts_df)
     last_n = meas_list[-1 * window_steps :]
     prediction = predict_last_n(last_n, model)
     prediction = {
-        "prediction_origin_time": measurement.date_time,
-        "prediction_time": measurement.date_time + timedelta(minutes=6 * 5),
+        "prediction_origin_time": last_measurement.date_time,
+        "prediction_time": last_measurement.date_time + timedelta(minutes=6 * 5),
         "prediction_value": prediction,
     }
 
-    print(predictions)
+    print(prediction)
     measurement_df = pd.DataFrame(meas_list)
-    prediction_df = pd.DataFrame(predictions)
-    return measurement_df, prediction_df
+    # prediction_df = pd.DataFrame(predictions)
+    return measurement_df, prediction
 
 
 def handle_new_data():
     # # mongo_predictions(model)
 
-    measurement_df, prediction_df = mongo_predictions()
+    measurement_df, prediction = mongo_prediction()
 
 
 if __name__ == "__main__":
