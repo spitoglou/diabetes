@@ -7,16 +7,26 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 from src.mongo import MongoDB
-from config.server_config import DATABASE, COLLECTION
+from config.server_config import DATABASE, OHIO_ID, WINDOW_STEPS, PREDICTION_HORIZON
 from loguru import logger
+import glob
+import os
 
 mongo = MongoDB()
 db = mongo.client[DATABASE]
-mongo_collection = db[COLLECTION]
+mongo_collection = db[f'measurements_{OHIO_ID}']
 
-model = load_model(
-    "models/559_6_6_1_LGBMRegressor_9983a67c-632d-4ce3-8098-d73dbe2d145f"
-)
+try:
+    model_file = glob.glob(f'models/{OHIO_ID}_{WINDOW_STEPS}_{PREDICTION_HORIZON}_1*.pkl')[0]
+    model_path = os.path.splitext(model_file)[0]
+    print(model_path)
+    model = load_model(
+        # "models/559_6_6_1_LGBMRegressor_8ef033d3-ac4b-47ba-8231-fb49991f8b7f"
+        model_path
+    )
+except Exception as e:
+    logger.error(f"Could not load model [{e}]")
+    exit(1)
 
 
 def get_part_of_day(hour):
@@ -26,7 +36,7 @@ def get_part_of_day(hour):
         else "afternoon"
         if 12 <= hour <= 16
         else "evening"
-        if 16 <= hour <= 20
+        if 17 <= hour <= 20
         else "night"
         if 21 <= hour <= 23
         else "late night"
@@ -72,11 +82,11 @@ def featurize_stream_df(stream_df, window, horizon):
     return featurizer.feature_dataframe
 
 
-def predict_last_n(last_n: list, model):
+def predict_last_n(last_n: list, model, window_steps, prediction_horizon):
     saved_model_features = model.feature_names_in_
     stream = pd.DataFrame(last_n).reset_index(drop=True)
     print(stream)
-    features = featurize_stream_df(stream, 6, 6)
+    features = featurize_stream_df(stream, window_steps, prediction_horizon)
     # features
     prediction = predict_model(
         model, correct_features(features, saved_model_features)
@@ -117,7 +127,7 @@ def create_measurements_list(timeseries_df):
     return meas_list, measurement
 
 
-def mongo_prediction(window_steps):
+def mongo_prediction(window_steps, prediction_horizon):
     ts_df = retrieve_data(mongo_collection, 12)
     # reverse dataframe
     ts_df = ts_df[::-1].reset_index(drop=True)
@@ -125,10 +135,10 @@ def mongo_prediction(window_steps):
 
     meas_list, last_measurement = create_measurements_list(ts_df)
     last_n = meas_list[-1 * window_steps :]
-    prediction = predict_last_n(last_n, model)
+    prediction = predict_last_n(last_n, model, window_steps, prediction_horizon)
     prediction = {
         "prediction_origin_time": last_measurement.date_time,
-        "prediction_time": last_measurement.date_time + timedelta(minutes=6 * 5),
+        "prediction_time": last_measurement.date_time + timedelta(minutes=prediction_horizon * 5),
         "prediction_value": prediction,
     }
 
@@ -141,7 +151,12 @@ def mongo_prediction(window_steps):
 def handle_new_data():
     # # mongo_predictions(model)
 
-    measurement_df, prediction = mongo_prediction()
+    measurement_df, prediction = mongo_prediction(WINDOW_STEPS, PREDICTION_HORIZON)
+    
+    logger.info('Inserting predicition in Database')
+    pred_db = db[f'predictions_{OHIO_ID}']
+    rec_id = pred_db.insert_one(prediction).inserted_id
+    logger.success(rec_id)
 
 
 if __name__ == "__main__":
@@ -153,17 +168,18 @@ if __name__ == "__main__":
     try:
         resume_token = None
         pipeline = [{"$match": {"operationType": "insert"}}]
+        logger.info("Starting Database Watch")
         with mongo_collection.watch(pipeline) as stream:
             for _ in stream:
                 handle_new_data()
                 resume_token = stream.resume_token
-    except pymongo.errors.PyMongoError:
+    except pymongo.errors.PyMongoError as e:
         # The ChangeStream encountered an unrecoverable error or the
         # resume attempt failed to recreate the cursor.
         if resume_token is None:
             # There is no usable resume token because there was a
             # failure during ChangeStream initialization.
-            logger.error("...")
+            logger.error(e)
         else:
             # Use the interrupted ChangeStream's resume token to create
             # a new ChangeStream. The new stream will continue from the
