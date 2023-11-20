@@ -12,6 +12,7 @@ from src.mongo import MongoDB
 from loguru import logger
 import json
 import config.server_config as conf
+from src.helpers.misc import debug_print
 
 DEBUG = conf.DEBUG
 
@@ -36,10 +37,10 @@ async def root():
 
 @app.post("/bg/reading")
 async def post_reading(json_payload:Fhir):
-    if DEBUG:
-        logger.debug(json_payload)
-        logger.debug(json_payload.__dict__)
     payload_dict = json_payload.__dict__
+    if DEBUG:
+        debug_print('JSON payload', json_payload)
+        debug_print('JSON payload converted to python dictionary', payload_dict)
     db = dbms.client[conf.DATABASE]
     cgm_db = db[f'measurements_{payload_dict["subject"]["identifier"]}']
     rec_id = cgm_db.insert_one(payload_dict).inserted_id

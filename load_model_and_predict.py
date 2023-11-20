@@ -1,13 +1,14 @@
 from pycaret.regression import load_model, predict_model
 from src.featurizers.tsfresh import TsfreshFeaturizer
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+from src.helpers.misc import debug_print, get_part_of_day
 from datetime import datetime, timedelta
 import pymongo
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
 from src.mongo import MongoDB
-from config.server_config import DATABASE, OHIO_ID, WINDOW_STEPS, PREDICTION_HORIZON
+from config.server_config import DATABASE, OHIO_ID, WINDOW_STEPS, PREDICTION_HORIZON, DEBUG
 from loguru import logger
 import glob
 import os
@@ -27,20 +28,6 @@ try:
 except Exception as e:
     logger.error(f"Could not load model [{e}]")
     exit(1)
-
-
-def get_part_of_day(hour):
-    return (
-        "morning"
-        if 7 <= hour <= 11
-        else "afternoon"
-        if 12 <= hour <= 16
-        else "evening"
-        if 17 <= hour <= 20
-        else "night"
-        if 21 <= hour <= 23
-        else "late night"
-    )
 
 
 def correct_lgbm_names(df) -> pd.DataFrame:
@@ -85,13 +72,13 @@ def featurize_stream_df(stream_df, window, horizon):
 def predict_last_n(last_n: list, model, window_steps, prediction_horizon):
     saved_model_features = model.feature_names_in_
     stream = pd.DataFrame(last_n).reset_index(drop=True)
-    print(stream)
+    debug_print('Streamed Dataframe used for prediction', stream) if DEBUG else ...
     features = featurize_stream_df(stream, window_steps, prediction_horizon)
     # features
     prediction = predict_model(
         model, correct_features(features, saved_model_features)
     ).prediction_label[0]
-    print(prediction)
+    logger.info(f'The prediction is {prediction}')
     return prediction
 
 
@@ -106,7 +93,7 @@ def retrieve_data(mongo_collection, limit: int = 200):
 def create_measurements_list(timeseries_df):
     meas_list = []
     for index, row in timeseries_df.iterrows():
-        print(row)
+        debug_print('Measurement row', row) if DEBUG else ...
         # print(row['valueQuantity']['value'])
         # print(pd.to_datetime(row['effectiveDateTime']).timetuple())
         date_time = pd.to_datetime(row["effectiveDateTime"])
@@ -122,7 +109,7 @@ def create_measurements_list(timeseries_df):
         }
         measurement = pd.Series(d)
         meas_list.append(measurement)
-    print(meas_list)
+    debug_print('List of Measurements',meas_list) if DEBUG else ...
     # * "measurement" variable here is the last measurement from the loop above
     return meas_list, measurement
 
@@ -131,7 +118,7 @@ def mongo_prediction(window_steps, prediction_horizon):
     ts_df = retrieve_data(mongo_collection, 12)
     # reverse dataframe
     ts_df = ts_df[::-1].reset_index(drop=True)
-    print(ts_df)
+    debug_print('Timeseries Dataframe', ts_df) if DEBUG else ...
 
     meas_list, last_measurement = create_measurements_list(ts_df)
     last_n = meas_list[-1 * window_steps :]
@@ -142,7 +129,7 @@ def mongo_prediction(window_steps, prediction_horizon):
         "prediction_value": prediction,
     }
 
-    print(prediction)
+    debug_print('Prediction', prediction)
     measurement_df = pd.DataFrame(meas_list)
     # prediction_df = pd.DataFrame(predictions)
     return measurement_df, prediction
@@ -150,13 +137,15 @@ def mongo_prediction(window_steps, prediction_horizon):
 
 def handle_new_data():
     # # mongo_predictions(model)
-
-    measurement_df, prediction = mongo_prediction(WINDOW_STEPS, PREDICTION_HORIZON)
-    
-    logger.info('Inserting predicition in Database')
-    pred_db = db[f'predictions_{OHIO_ID}']
-    rec_id = pred_db.insert_one(prediction).inserted_id
-    logger.success(rec_id)
+    try:
+        measurement_df, prediction = mongo_prediction(WINDOW_STEPS, PREDICTION_HORIZON)
+        
+        logger.info('Inserting predicition in Database')
+        pred_db = db[f'predictions_{OHIO_ID}']
+        rec_id = pred_db.insert_one(prediction).inserted_id
+        logger.success(rec_id)
+    except Exception as e:
+        logger.error(e)
 
 
 if __name__ == "__main__":
