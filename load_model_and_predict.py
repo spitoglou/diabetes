@@ -22,7 +22,6 @@ try:
     model_path = os.path.splitext(model_file)[0]
     print(model_path)
     model = load_model(
-        # "models/559_6_6_1_LGBMRegressor_8ef033d3-ac4b-47ba-8231-fb49991f8b7f"
         model_path
     )
 except Exception as e:
@@ -84,18 +83,12 @@ def predict_last_n(last_n: list, model, window_steps, prediction_horizon):
 
 def retrieve_data(mongo_collection, limit: int = 200):
     return pd.DataFrame(list(mongo_collection.find(limit=limit, sort=[("_id", -1)])))
-    # sensor_data['timestamp'] = pd.to_datetime(sensor_data['timestamp']).astype(str)
-    # # ?test = test.drop(columns=['_id'])
-    # sensor_data['_id'] = sensor_data['_id'].astype(pd.StringDtype())
-    # return sensor_data
 
 
 def create_measurements_list(timeseries_df):
     meas_list = []
     for index, row in timeseries_df.iterrows():
         debug_print('Measurement row', row) if DEBUG else ...
-        # print(row['valueQuantity']['value'])
-        # print(pd.to_datetime(row['effectiveDateTime']).timetuple())
         date_time = pd.to_datetime(row["effectiveDateTime"])
         time = date_time.time
         hour = date_time.hour
@@ -149,10 +142,6 @@ def handle_new_data():
 
 
 if __name__ == "__main__":
-    # print(prediction_df)
-    # ax = prediction_df.plot(y="prediction_value", x="prediction_time")
-    # measurement_df.plot(ax=ax, y="bg_value", x="date_time")
-    # plt.show()
 
     try:
         resume_token = None

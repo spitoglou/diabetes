@@ -13,19 +13,29 @@ import json
 from datetime import datetime
 from config.simulation_config import OHIO_ID, INTERVAL
 
-# logger.disable('')
-
 
 def stream_data(send_to_service: bool = True, verbose: bool = False):
+    """Συνάρτηση ανάκτησης, προετοιμασίας και αποστολής σειράς μετρήσεων
+        για το simulation και τη δοκιμή γεννήτριας μετρήσεων CGM
+
+    Args:
+        send_to_service (bool, optional): Διακόπτης τελικής αποστολής στο service. Defaults to True.
+        verbose (bool, optional): Διακόπτης εκτεταμένων μηνυμάτων εκτέλεσης. Defaults to False.
+    """    
+    
+    # Ορισμός της μεθόδου streaming από τον αντίστοιχο provider
     provider = OhioBgcProvider(ohio_no=OHIO_ID)
     stream = provider.simulate_glucose_stream()
     try:
-        while True:
-            values = next(stream)
-            # values['time'] = datetime.now().isoformat()
+        # Εκτέλεση ατέρμονου βρόχου έως την ακύρωση από το χρήστη
+        while True:  
+            # ανάκτηση επόμενης μέτρησης
+            values = next(stream)  
             logger.info(values) if verbose else ...
-            payload = create_fhir_json_from_reading(values)
+            # κλήση μεθόδου μετατροπής της μέτρησης σε αντικέιμενο FHIR
+            payload = create_fhir_json_from_reading(values)  
             logger.info(payload) if verbose else ...
+            # αποστολή στο RESTful endpoint του service (εφόσον είναι ενεργοποιημένη)
             if send_to_service:
                 r = requests.post("http://localhost:8000/bg/reading", data=payload)
                 logger.info(r.status_code) if verbose else ...
@@ -39,4 +49,4 @@ def stream_data(send_to_service: bool = True, verbose: bool = False):
 
 
 if __name__ == "__main__":
-    stream_data(True, False)
+    stream_data(send_to_service=True, verbose=False)

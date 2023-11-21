@@ -36,5 +36,6 @@ if __name__ == "__main__":
             "time": "2021-12-07T01:27:00+00:00",
             "value": 104.0,
             "patient": "559",
-        }
+        },
+        verbose=True
     )
