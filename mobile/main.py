@@ -4,6 +4,8 @@ from src.mongo import MongoDB
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from datetime import datetime
+
 
 # This is a placeholder to get you started or refresh your memory.
 # Delete it or adapt it as necessary.
@@ -15,6 +17,9 @@ print("Application Start!!")
 mongo = MongoDB()
 db = mongo.client[mg_conf.MONGO_DATABASE]
 # TODO: Find a way to remove hardcoding via state?
+
+LOW = 70
+HIGH = 180
 
 
 def _retrieve_data(limit: int = 50):
@@ -50,7 +55,7 @@ def _retrieve_data(limit: int = 50):
     return measurements_df, predictions_df
 
 
-def _create_graph(measurements, predictions, low, high):
+def _create_graph(measurements, predictions):
     measurements = measurements.sort_values(by="date_time")
     predictions = predictions.sort_values(by="prediction_time")
 
@@ -76,8 +81,8 @@ def _create_graph(measurements, predictions, low, high):
     # temp_graph.add_hline(y=TEMP_LOW_LIMIT)
     # temp_graph.add_hline(y=27)
     temp_graph.add_hrect(
-        y0=low,
-        y1=high,
+        y0=LOW,
+        y1=HIGH,
         line_width=1,
         fillcolor="green",
         opacity=0.2,
@@ -93,6 +98,35 @@ def _update_message(state):
     message = "+Even" if is_even else "-Odd"
     state["message"] = message
 
+def _get_last_measurement(measurement):
+    value = measurement['value']
+    if LOW < value < HIGH:
+        marker = '+'
+        note = 'In Range'
+    else:
+        marker = '-'
+        if value <= LOW:
+            note = 'Below Range'
+        else:
+            note = 'Above Range'
+    dt = measurement['date_time']
+    
+    return value, dt, f'{marker}{note}'
+
+def _get_last_prediction(prediction):
+    value = prediction['prediction_value']
+    if LOW < value < HIGH:
+        marker = '+'
+        note = 'In Range'
+    else:
+        marker = '-'
+        if value <= LOW:
+            note = 'Below Range'
+        else:
+            note = 'Above Range'
+    dt = prediction['prediction_time']
+    
+    return value, dt, f'{marker}{note}'
 
 def decrement(state):
     state["counter"] -= 1
@@ -110,7 +144,16 @@ def refresh(state):
     measurements, predictions = _retrieve_data()
     state["data"]["measurements"] = measurements
     state["data"]["predictions"] = predictions
-    state["graph"] = _create_graph(measurements, predictions, 80, 140)
+    state["graph"] = _create_graph(measurements, predictions)
+    lm, lm_dt, lm_note = _get_last_measurement(measurements.iloc[0])
+    state["last_measurement"] = lm
+    state["last_measurement_time"] = lm_dt
+    state["last_measurement_note"] = lm_note
+    pr, pr_dt, pr_note = _get_last_prediction(predictions.iloc[0])
+    state["last_prediction"] = pr
+    state["last_prediction_time"] = pr_dt
+    state["last_prediction_note"] = pr_note
+    
 
 
 # Initialise the state
@@ -133,6 +176,12 @@ initial_state = ss.init_state(
             "predictions": pred_df,
         },
         "graph": None,
+        "last_measurement": 0,
+        "last_measurement_time": None,
+        "last_measurement_note": None,
+        "last_prediction": 0,
+        "last_prediction_time": None,
+        "last_prediction_note": None,
     }
 )
 

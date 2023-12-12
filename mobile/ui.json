@@ -37,123 +37,15 @@
             "handlers": {},
             "visible": true
         },
-        "28d3885b-0fb8-4d41-97c6-978540015431": {
-            "id": "28d3885b-0fb8-4d41-97c6-978540015431",
-            "type": "section",
-            "content": {
-                "title": "",
-                "snapMode": "no",
-                "containerShadow": "0px 4px 11px -12px #000000"
-            },
-            "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
-            "position": 1,
-            "handlers": {},
-            "visible": true
-        },
-        "9556c0e3-8584-4ac9-903f-908a775a33ec": {
-            "id": "9556c0e3-8584-4ac9-903f-908a775a33ec",
-            "type": "button",
-            "content": {
-                "text": " Increment",
-                "icon": "arrow-up"
-            },
-            "parentId": "0d05bc9f-1655-4d0b-bc9b-c2f4c71a5117",
-            "position": 1,
-            "handlers": {
-                "click": "increment"
-            },
-            "visible": true
-        },
-        "51d1554e-1b88-461c-9353-1419cba0053a": {
-            "id": "51d1554e-1b88-461c-9353-1419cba0053a",
-            "type": "button",
-            "content": {
-                "text": "Decrement",
-                "icon": "arrow-down"
-            },
-            "parentId": "0d05bc9f-1655-4d0b-bc9b-c2f4c71a5117",
-            "position": 0,
-            "handlers": {
-                "click": "decrement"
-            },
-            "visible": true
-        },
-        "0d05bc9f-1655-4d0b-bc9b-c2f4c71a5117": {
-            "id": "0d05bc9f-1655-4d0b-bc9b-c2f4c71a5117",
-            "type": "horizontalstack",
-            "content": {
-                "alignment": "left"
-            },
-            "parentId": "f3777e75-3659-4d44-8ef7-aeec0d06855b",
-            "position": 0,
-            "handlers": {},
-            "visible": true
-        },
-        "172a14df-f73a-44fa-8fb1-e8648e7d32d2": {
-            "id": "172a14df-f73a-44fa-8fb1-e8648e7d32d2",
-            "type": "metric",
-            "content": {
-                "metricValue": "@{counter}",
-                "note": "@{message}",
-                "name": "Counter"
-            },
-            "parentId": "c2519671-9ce7-44e7-ba4e-b0efda9cb20e",
-            "position": 0,
-            "handlers": {},
-            "visible": true
-        },
-        "d4a5e62c-c6fe-49c4-80d4-33862af8727d": {
-            "id": "d4a5e62c-c6fe-49c4-80d4-33862af8727d",
-            "type": "columns",
-            "content": {},
-            "parentId": "28d3885b-0fb8-4d41-97c6-978540015431",
-            "position": 0,
-            "handlers": {},
-            "visible": true
-        },
-        "f3777e75-3659-4d44-8ef7-aeec0d06855b": {
-            "id": "f3777e75-3659-4d44-8ef7-aeec0d06855b",
-            "type": "column",
-            "content": {
-                "title": "",
-                "width": "1",
-                "verticalAlignment": "center",
-                "horizontalAlignment": "center"
-            },
-            "parentId": "d4a5e62c-c6fe-49c4-80d4-33862af8727d",
-            "position": 2,
-            "handlers": {},
-            "visible": true
-        },
-        "c2519671-9ce7-44e7-ba4e-b0efda9cb20e": {
-            "id": "c2519671-9ce7-44e7-ba4e-b0efda9cb20e",
-            "type": "column",
-            "content": {
-                "width": "1"
-            },
-            "parentId": "d4a5e62c-c6fe-49c4-80d4-33862af8727d",
-            "position": 0,
-            "handlers": {},
-            "visible": true
-        },
-        "d4a71819-7444-4083-a1c7-7995452a7abf": {
-            "id": "d4a71819-7444-4083-a1c7-7995452a7abf",
-            "type": "separator",
-            "content": {},
-            "parentId": "d4a5e62c-c6fe-49c4-80d4-33862af8727d",
-            "position": 1,
-            "handlers": {},
-            "visible": true
-        },
         "kg1tqh8t2tb4s33u": {
             "id": "kg1tqh8t2tb4s33u",
             "type": "section",
             "content": {
-                "title": "Section Title",
+                "title": "",
                 "snapMode": "no"
             },
             "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
-            "position": 2,
+            "position": 1,
             "handlers": {},
             "visible": true
         },
@@ -161,8 +53,10 @@
             "id": "p213phzfvj1rp5ee",
             "type": "metric",
             "content": {
-                "note": "+Pass",
-                "name": "\u03a4\u03c1\u03ad\u03c7\u03bf\u03c5\u03c3\u03b1 \u03a4\u03b9\u03bc\u03ae"
+                "note": "@{last_measurement_note}",
+                "name": "\u03a4\u03b5\u03bb\u03b5\u03c5\u03c4\u03b1\u03af\u03b1 \u039c\u03ad\u03c4\u03c1\u03b7\u03c3\u03b7",
+                "metricValue": "@{last_measurement}",
+                "description": "@{last_measurement_time}"
             },
             "parentId": "jdp5qohzkmnfesse",
             "position": 0,
@@ -224,8 +118,10 @@
             "id": "31b6nsnihasy3c56",
             "type": "metric",
             "content": {
-                "name": "\u03a0\u03c1\u03cc\u03b2\u03bb\u03b5\u03c8\u03b7",
-                "note": "+Pass"
+                "name": "\u03a4\u03b5\u03bb\u03b5\u03c5\u03c4\u03b1\u03af\u03b1 \u03a0\u03c1\u03cc\u03b2\u03bb\u03b5\u03c8\u03b7",
+                "note": "@{last_prediction_note}",
+                "metricValue": "@{last_prediction}",
+                "description": "@{last_prediction_time}"
             },
             "parentId": "pmsex11my4fhzmuo",
             "position": 0,
@@ -240,7 +136,7 @@
                 "snapMode": "no"
             },
             "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
-            "position": 4,
+            "position": 3,
             "handlers": {},
             "visible": true
         },
@@ -276,7 +172,7 @@
                 "snapMode": "no"
             },
             "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
-            "position": 5,
+            "position": 4,
             "handlers": {},
             "visible": true
         },
@@ -294,24 +190,24 @@
         "wuxwgyipnfvuglhp": {
             "id": "wuxwgyipnfvuglhp",
             "type": "section",
-            "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
             "content": {
-                "title": "Section Title",
+                "title": "",
                 "snapMode": "no"
             },
+            "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
+            "position": 2,
             "handlers": {},
-            "position": 3,
             "visible": true
         },
         "nqk61wlddh2tg5nb": {
             "id": "nqk61wlddh2tg5nb",
             "type": "plotlygraph",
-            "parentId": "wuxwgyipnfvuglhp",
             "content": {
                 "spec": "@{graph}"
             },
-            "handlers": {},
+            "parentId": "wuxwgyipnfvuglhp",
             "position": 0,
+            "handlers": {},
             "visible": true
         }
     }
