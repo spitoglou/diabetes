@@ -1,31 +1,34 @@
+from os import path
+
+import matplotlib
+from loguru import logger
+from pycaret.regression import (
+    add_metric,
+    compare_models,
+    get_config,
+    predict_model,
+    pull,
+    save_model,
+    setup,
+)  # create_model,
+
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
 
 # ?from src.bgc_providers.aida_bgc_provider import AidaBgcProvider
 from src.featurizers.tsfresh import TsfreshFeaturizer
-from src.helpers.dataframe import save_df, read_df
-from os import path
-from loguru import logger
-from pycaret.regression import (
-    setup,
-    compare_models,
-    predict_model,
-    get_config,
-    pull,
-    add_metric,
-    dashboard,
-    save_model,
-)  # create_model,
-import matplotlib
+from src.helpers.dataframe import read_df, save_df
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.metrics import mean_squared_error
 import sys
 import time
+
+import matplotlib.pyplot as plt
 import neptune
-from src.helpers.diabetes.madex import madex, rmadex, mean_adjusted_exponent_error
+import numpy as np
+from sklearn.metrics import mean_squared_error
+
 from src.helpers.diabetes.cega import clarke_error_grid
+from src.helpers.diabetes.madex import madex, mean_adjusted_exponent_error, rmadex
 
 
 def create_ds_name(parameters):
@@ -134,7 +137,9 @@ class Experiment:
             }
 
     def create_dataframe(self, parameters: dict):
-        return self.fix_names(self.remove_missing_and_inf(create_tsfresh_dataframe(parameters)))
+        return self.fix_names(
+            self.remove_missing_and_inf(create_tsfresh_dataframe(parameters))
+        )
 
     def remove_gaps(self, df):
         if self.perform_gap_corrections:
@@ -177,9 +182,17 @@ class Experiment:
         # LightGBMError: Do not support special JSON characters in feature name.
         import re
 
+        # Fix values in part_of_day column (spaces to underscores) before pycaret one-hot encodes
+        if "part_of_day" in df.columns:
+            df["part_of_day"] = df["part_of_day"].str.replace(" ", "_")
+
         # df = df.rename(columns = lambda x:re.sub('[^A-Za-z0-9_]+', '', x))
         # Change columns names ([LightGBM] Do not support special JSON characters in feature name.)
-        new_names = {col: re.sub(r"[^A-Za-z0-9_]+", "", col) for col in df.columns}
+        # First replace spaces with underscores, then remove other special characters
+        new_names = {
+            col: re.sub(r"[^A-Za-z0-9_]+", "", col.replace(" ", "_"))
+            for col in df.columns
+        }
         new_n_list = list(new_names.values())
         # [LightGBM] Feature appears more than one time.
         new_names = {
@@ -200,23 +213,24 @@ class Experiment:
         self.unseen_data_df = self.remove_gaps(
             self.create_dataframe(self.unseen_data_parameters)
         )
-        
+
     def align_dataframe_columns(self):
-        print('--------------------------------------------------')
+        print("--------------------------------------------------")
         train_df_columns = self.train_df.columns.tolist()
         unseen_data_df_columns = self.unseen_data_df.columns.tolist()
         # print(self.train_df.columns.tolist())
         for train_column in train_df_columns:
             if train_column not in unseen_data_df_columns:
-                print(f'Dropping {train_column}')
+                print(f"Dropping {train_column}")
                 self.train_df.drop(train_column, axis=1, inplace=True)
-        print('--------------------------------------------------')
+        print("--------------------------------------------------")
 
     def setup_regressor(self):
         self.regressor = setup(
             self.train_df,
             target="label",
             feature_selection=True,
+            normalize=True,
             ignore_features=[
                 "start",
                 "end",
@@ -270,9 +284,9 @@ class Experiment:
         for index, model in enumerate(self.best_models):
             save_model(
                 model,
-                f"models/{self.patient}_{self.window}_{self.horizon}_{index+1}_{self.get_model_name(model.__str__())}_{uuid.uuid4()}",
+                f"models/{self.patient}_{self.window}_{self.horizon}_{index + 1}_{self.get_model_name(model.__str__())}_{uuid.uuid4()}",
             )
-            logger.info(f"Model {(index+1)}:")
+            logger.info(f"Model {(index + 1)}:")
             logger.info(model)
 
     def calculate_prediction(self, model, custom_data=None, legend=""):
@@ -298,7 +312,7 @@ class Experiment:
         return (fig, res, rmse, rmadex)
 
     def predict_holdout(self, model=None):
-        legend = f"[{self.patient}]Holdout_W{(self.window*5)}_H{(self.horizon*5)}"
+        legend = f"[{self.patient}]Holdout_W{(self.window * 5)}_H{(self.horizon * 5)}"
         (
             self.holdout_cega_fig,
             self.holdout_cega_res,
@@ -311,7 +325,9 @@ class Experiment:
         # self.neptune[f'holdout/images/{legend}'].upload(neptune.types.File.as_image(self.holdout_cega_fig))
 
     def predict_unseen(self, model=None):
-        legend = f"[{self.patient}]UnseenData_W{(self.window*5)}_H{(self.horizon*5)}"
+        legend = (
+            f"[{self.patient}]UnseenData_W{(self.window * 5)}_H{(self.horizon * 5)}"
+        )
         # self.create_unseen_data_dataframe()
         (
             self.unseen_cega_fig,
