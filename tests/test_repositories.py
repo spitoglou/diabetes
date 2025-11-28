@@ -2,7 +2,7 @@
 Tests for repository classes.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -40,7 +40,7 @@ class TestMeasurementRepository:
     def test_get_collection_valid_patient(self, mock_db, config):
         """Test getting collection for valid patient ID."""
         repo = MeasurementRepository(mock_db, config)
-        collection = repo._get_collection("559")
+        _collection = repo._get_collection("559")
         mock_db.__getitem__.assert_called_with("measurements_559")
 
     def test_get_collection_invalid_patient(self, mock_db, config):
@@ -113,7 +113,7 @@ class TestPredictionRepository:
     def test_get_collection_valid_patient(self, mock_db, config):
         """Test getting collection for valid patient ID."""
         repo = PredictionRepository(mock_db, config)
-        collection = repo._get_collection("559")
+        _collection = repo._get_collection("559")
         mock_db.__getitem__.assert_called_with("predictions_559")
 
     def test_save_prediction(self, mock_db, config):

@@ -1,7 +1,7 @@
 """Metrics calculation for glucose prediction evaluation."""
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -85,7 +85,7 @@ class MetricsCalculator:
             cega_zones=cega_zones,
             rmse=rmse,
             rmadex=rmadex,
-            cega_figure=fig if generate_plot else None,
+            cega_figure=fig if generate_plot and isinstance(fig, plt.Figure) else None,
         )
 
     def calculate_from_predictions(
@@ -109,9 +109,24 @@ class MetricsCalculator:
         Returns:
             PredictionMetrics with all calculated values.
         """
+        actual_series = predictions_df[actual_col]
+        predicted_series = predictions_df[predicted_col]
+
+        # Ensure we have Series objects
+        if isinstance(actual_series, pd.DataFrame):
+            actual_series = actual_series.squeeze()
+        if isinstance(predicted_series, pd.DataFrame):
+            predicted_series = predicted_series.squeeze()
+
+        # Ensure they are Series type for type checker
+        if not isinstance(actual_series, pd.Series):
+            actual_series = pd.Series(actual_series)
+        if not isinstance(predicted_series, pd.Series):
+            predicted_series = pd.Series(predicted_series)
+
         return self.calculate(
-            predictions_df[actual_col],
-            predictions_df[predicted_col],
+            actual_series,
+            predicted_series,
             legend=legend,
             generate_plot=generate_plot,
         )

@@ -128,10 +128,10 @@ class ExperimentOrchestrator:
 
         try:
             # Prepare parameters
-            train_params = self._make_params(
+            _train_params = self._make_params(
                 patient_id, "train", window, horizon, minimal_features
             )
-            test_params = self._make_params(
+            _test_params = self._make_params(
                 patient_id, "test", window, horizon, minimal_features
             )
 
@@ -192,7 +192,7 @@ class ExperimentOrchestrator:
             # Log to Neptune
             if use_neptune and self._neptune_run:
                 self._neptune_run["model/comparison"].upload(
-                    neptune.types.File.as_html(self.model_trainer.comparison_df)
+                    neptune.types.File.as_html(self.model_trainer.comparison_df)  # pyright: ignore[reportAttributeAccessIssue]
                 )
 
             # Save models

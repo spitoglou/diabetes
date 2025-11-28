@@ -15,7 +15,7 @@ from pycaret.regression import (
     setup,
 )
 
-from src.config import Config, get_config
+from src.config import Config
 from src.helpers.diabetes.madex import madex, rmadex
 
 
@@ -82,10 +82,6 @@ class ModelTrainer:
         """
         logger.info(f"Setting up regressor with {len(train_df)} samples")
 
-        # Add custom metrics
-        add_metric("madex", "MADEX", madex, greater_is_better=False)
-        add_metric("rmadex", "RMADEX", rmadex, greater_is_better=False)
-
         self._regressor = setup(
             train_df,
             target=target,
@@ -96,6 +92,10 @@ class ModelTrainer:
             verbose=verbose,
             session_id=session_id,
         )
+
+        # Add custom metrics (must be after setup())
+        add_metric("madex", "MADEX", madex, greater_is_better=False)  # type: ignore
+        add_metric("rmadex", "RMADEX", rmadex, greater_is_better=False)  # type: ignore
 
         logger.info("Regressor setup complete")
         return self._regressor

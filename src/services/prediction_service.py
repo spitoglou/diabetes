@@ -3,7 +3,7 @@
 import glob
 import os
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
@@ -86,7 +86,7 @@ class PredictionService:
         logger.info(f"Loading model from: {model_path}")
 
         self._model = load_model(model_path)
-        self._model_features = self._model.feature_names_in_
+        self._model_features = self._model.feature_names_in_  # pyright: ignore[reportOptionalMemberAccess]
 
         return self._model
 
@@ -136,7 +136,7 @@ class PredictionService:
         )
 
         # Correct feature names for model compatibility
-        features = self._correct_feature_names(features, self._model_features)
+        features = self._correct_feature_names(features, self._model_features)  # pyright: ignore[reportArgumentType]
 
         # Make prediction
         prediction_result = predict_model(self._model, features)

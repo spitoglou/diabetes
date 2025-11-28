@@ -1,7 +1,6 @@
 """Feature engineering pipeline using tsfresh."""
 
 from os import path
-from typing import Optional
 
 import pandas as pd
 from loguru import logger
@@ -91,10 +90,13 @@ class FeatureEngineer:
         )
         featurizer.create_labeled_dataframe()
 
-        logger.info(
-            f"Created feature dataframe with shape: {featurizer.labeled_dataframe.shape}"
+        labeled_df = featurizer.labeled_dataframe
+        assert isinstance(labeled_df, pd.DataFrame), (
+            "Expected labeled_dataframe to be a DataFrame"
         )
-        return featurizer.labeled_dataframe
+
+        logger.info(f"Created feature dataframe with shape: {labeled_df.shape}")
+        return labeled_df
 
     def create_features_cached(
         self,
@@ -131,7 +133,11 @@ class FeatureEngineer:
 
         if path.exists(cache_path) and not force_recreate:
             logger.info("Loading features from cache")
-            return read_df(cache_path)
+            cached_df = read_df(cache_path)
+            assert isinstance(cached_df, pd.DataFrame), (
+                "Expected cached data to be a DataFrame"
+            )
+            return cached_df
 
         logger.info("Creating new features (not cached or force_recreate=True)")
         feature_df = self.create_features(
@@ -176,4 +182,8 @@ class FeatureEngineer:
         featurizer.chunks = 1
         featurizer.create_feature_dataframe()
 
-        return featurizer.feature_dataframe
+        feature_df = featurizer.feature_dataframe
+        assert isinstance(feature_df, pd.DataFrame), (
+            "Expected feature_dataframe to be a DataFrame"
+        )
+        return feature_df

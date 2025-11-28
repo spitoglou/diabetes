@@ -1,7 +1,6 @@
 """Data pipeline for loading and cleaning glucose data."""
 
 import re
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -207,8 +206,11 @@ class DataPipeline:
         """
         Align columns between training and test DataFrames.
 
-        Ensures both DataFrames have the same columns by keeping only
-        columns that exist in both.
+        Returns two DataFrames that contain **only** the intersecting columns,
+        preserving the original column order from ``train_df``. This guarantees
+        that the static type checker sees the return values as ``pd.DataFrame``
+        objects (using ``.loc`` which always yields a DataFrame, even for a single
+        column).
 
         Args:
             train_df: Training DataFrame.
@@ -217,6 +219,7 @@ class DataPipeline:
         Returns:
             Tuple of (aligned_train_df, aligned_test_df).
         """
+        # Determine column intersections and differences
         train_cols = set(train_df.columns)
         test_cols = set(test_df.columns)
 
@@ -224,16 +227,21 @@ class DataPipeline:
         train_only = train_cols - test_cols
         test_only = test_cols - train_cols
 
+        # Log any mismatches for diagnostics
         if train_only:
             logger.warning(
-                f"Dropping {len(train_only)} columns only in train: {train_only}"
+                f"Dropping {len(train_only)} columns only present in training set: {train_only}"
             )
         if test_only:
             logger.warning(
-                f"Dropping {len(test_only)} columns only in test: {test_only}"
+                f"Dropping {len(test_only)} columns only present in test set: {test_only}"
             )
 
-        # Maintain original column order from train_df
-        ordered_cols = [c for c in train_df.columns if c in common_cols]
+        # Preserve the original column order from the training DataFrame
+        ordered_common_cols = [col for col in train_df.columns if col in common_cols]
 
-        return train_df[ordered_cols], test_df[ordered_cols]
+        # Use .loc to ensure the result is always a DataFrame (not a Series)
+        aligned_train = train_df.loc[:, ordered_common_cols]
+        aligned_test = test_df.loc[:, ordered_common_cols]
+
+        return aligned_train, aligned_test

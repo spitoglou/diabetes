@@ -79,11 +79,11 @@ def run_watcher():
     try:
         with measurement_repo.watch(patient_id, pipeline) as stream:
             for change in stream:
-                logger.debug(f"Detected new measurement")
+                logger.debug("Detected new measurement")
                 handle_new_data(service, patient_id, config)
                 resume_token = stream.resume_token
 
-    except pymongo.errors.PyMongoError as e:
+    except pymongo.errors.PyMongoError as e:  # pyright: ignore[reportAttributeAccessIssue]
         if resume_token is None:
             logger.error(f"Change stream initialization failed: {e}")
             raise
