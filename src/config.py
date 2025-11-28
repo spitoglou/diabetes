@@ -4,10 +4,15 @@ All settings are loaded from environment variables with sensible defaults.
 """
 
 import os
+import warnings
 from dataclasses import dataclass, field
 from typing import Tuple
 
 from dotenv import load_dotenv
+
+# Suppress warnings from tsfresh/pkg_resources at runtime
+warnings.filterwarnings("ignore", category=UserWarning, module="tsfresh")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="pkg_resources")
 
 # Load .env file if present
 load_dotenv()

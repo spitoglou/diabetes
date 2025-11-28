@@ -19,3 +19,9 @@ dependencies = [
     "python-dotenv>=1.2.1",
     "pyarrow>=22.0.0",
 ]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::UserWarning:tsfresh",
+    "ignore::DeprecationWarning:pkg_resources",
+]
