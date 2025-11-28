@@ -7,20 +7,18 @@ Author: Stavros Pitoglou
 Client for streaming glucose data to the server.
 """
 
-# Initialize logging BEFORE other imports to ensure all modules use configured logger
-from src.config import get_config
-from src.logging_config import setup_logging
-
-config = get_config()
-setup_logging(level=config.log_level)
-
 from time import sleep
 
 import requests
 from loguru import logger
 
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+from src.config import get_config
 from src.helpers.fhir import create_fhir_json_from_reading
+from src.logging_config import setup_logging
+
+config = get_config()
+setup_logging(level=config.log_level)
 
 logger.info(f"Logging initialized with level={config.log_level}, debug={config.debug}")
 

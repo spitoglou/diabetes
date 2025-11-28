@@ -7,13 +7,6 @@ Author: Stavros Pitoglou
 FastAPI server for receiving CGM glucose measurements.
 """
 
-# Initialize logging BEFORE other imports to ensure all modules use configured logger
-from src.config import Config, get_config
-from src.logging_config import setup_logging
-
-config = get_config()
-setup_logging(level=config.log_level)
-
 from typing import Any, Dict, List
 
 import uvicorn
@@ -21,8 +14,13 @@ from fastapi import Depends, FastAPI, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from src.config import Config, get_config
+from src.logging_config import setup_logging
 from src.mongo import MongoDB
 from src.repositories.measurement_repository import MeasurementRepository
+
+config = get_config()
+setup_logging(level=config.log_level)
 
 logger.info(f"Logging initialized with level={config.log_level}, debug={config.debug}")
 
