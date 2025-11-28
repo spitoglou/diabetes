@@ -170,8 +170,7 @@ def decrement(state):
 
 def increment(state):
     state["counter"] += 1
-    # Shows in the log when the event handler is run
-    print("The counter has been incremented.")
+    logger.info("The counter has been incremented.")
     _update_message(state)
 
 
