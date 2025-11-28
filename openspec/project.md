@@ -43,7 +43,7 @@ Diabetes blood glucose (BG) prediction system developed for a PhD thesis by Stav
 
 ### Code Style
 - Standard Python conventions (PEP 8)
-- Type hints used sparingly
+- Type hints required in all files (function signatures, class attributes, and variables where type is not obvious)
 - loguru for logging instead of standard logging module
 - Configuration via module-level constants and config files
 

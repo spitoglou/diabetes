@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import abc
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    import pandas as pd
+import pandas as pd
 
 
 class BgcProviderInterface(metaclass=abc.ABCMeta):
@@ -20,5 +21,5 @@ class BgcProviderInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def tsfresh_dataframe(
         self, truncate: int = 0, show_plt: bool = False
-    ) -> "pd.DataFrame":
+    ) -> pd.DataFrame:
         pass

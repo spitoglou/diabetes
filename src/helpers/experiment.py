@@ -1,7 +1,19 @@
+from __future__ import annotations
+
+import re
+import sys
+import time
+import uuid
 from os import path
+from typing import Any
 
 import matplotlib
+import matplotlib.pyplot as plt
+import neptune
+import numpy as np
+import pandas as pd
 from loguru import logger
+from neptune.types import File
 from pycaret.regression import (
     add_metric,
     compare_models,
@@ -10,28 +22,19 @@ from pycaret.regression import (
     pull,
     save_model,
     setup,
-)  # create_model,
-
-from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
-
-# ?from src.bgc_providers.aida_bgc_provider import AidaBgcProvider
-from src.featurizers.tsfresh import TsfreshFeaturizer
-from src.helpers.dataframe import read_df, save_df
-
-matplotlib.use("Agg")
-import sys
-import time
-
-import matplotlib.pyplot as plt
-import neptune
-import numpy as np
+)
 from sklearn.metrics import mean_squared_error
 
+from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+from src.featurizers.tsfresh import TsfreshFeaturizer
+from src.helpers.dataframe import read_df, save_df
 from src.helpers.diabetes.cega import clarke_error_grid
 from src.helpers.diabetes.madex import madex, mean_adjusted_exponent_error, rmadex
 
+matplotlib.use("Agg")
 
-def create_ds_name(parameters):
+
+def create_ds_name(parameters: dict[str, Any]) -> str:
     ds_name = (
         f"dataframes/{parameters['ohio_no']}_{parameters['scope']}_{parameters['train_ds_size']}"
         f"_{parameters['window_size']}_{parameters['prediction_horizon']}.pkl"
@@ -40,15 +43,16 @@ def create_ds_name(parameters):
     return ds_name
 
 
-def timeseries_dataframe(p, show_plt=False):
+def timeseries_dataframe(p: dict[str, Any], show_plt: bool = False) -> pd.DataFrame:
     provider = OhioBgcProvider(scope=p["scope"], ohio_no=p["ohio_no"])
     logger.info(p)
     return provider.tsfresh_dataframe(truncate=p["train_ds_size"], show_plt=show_plt)
 
 
-def create_tsfresh_dataframe(p, show_plt=False):
+def create_tsfresh_dataframe(p: dict[str, Any], show_plt: bool = False) -> pd.DataFrame:
     ds_name = create_ds_name(p)
     df = timeseries_dataframe(p, show_plt)
+    out: pd.DataFrame
     if path.exists(ds_name):
         logger.info("Found existing pickle file. Continuing...")
         out = read_df(ds_name)
@@ -86,17 +90,17 @@ class Experiment:
         elif log_type == "standard":
             logger.add(sys.stderr)
 
-        self.patient = patient
-        self.window = window
-        self.horizon = horizon
-        self.win_min = window * min_per_measure
-        self.hor_min = horizon * min_per_measure
-        self.best_models_no = best_models_no
-        self.speed = speed
+        self.patient: int = patient
+        self.window: int = window
+        self.horizon: int = horizon
+        self.win_min: int = window * min_per_measure
+        self.hor_min: int = horizon * min_per_measure
+        self.best_models_no: int = best_models_no
+        self.speed: int = speed
         self.logger = logger
-        self.perform_gap_corrections = perform_gap_corrections
-        self.enable_neptune = enable_neptune
-        self.train_parameters = {
+        self.perform_gap_corrections: bool = perform_gap_corrections
+        self.enable_neptune: bool = enable_neptune
+        self.train_parameters: dict[str, Any] = {
             "ohio_no": patient,
             "scope": "train",
             "train_ds_size": 0,
@@ -105,7 +109,7 @@ class Experiment:
             "minimal_features": minimal_features,
         }
 
-        self.unseen_data_parameters = {
+        self.unseen_data_parameters: dict[str, Any] = {
             "ohio_no": patient,
             "scope": "test",
             "train_ds_size": 0,
@@ -113,6 +117,22 @@ class Experiment:
             "prediction_horizon": horizon,
             "minimal_features": minimal_features,
         }
+
+        # Instance attributes initialized later
+        self.train_df: pd.DataFrame
+        self.unseen_data_df: pd.DataFrame
+        self.regressor: Any
+        self.best_models: list[Any]
+        self.models_comparison_df: pd.DataFrame
+        self.holdout_cega_fig: Any
+        self.holdout_cega_res: dict[str, int]
+        self.holdout_rmse: float
+        self.holdout_rmadex: float
+        self.unseen_cega_fig: Any
+        self.unseen_cega_res: dict[str, int]
+        self.unseen_rmse: float
+        self.unseen_rmadex: float
+        self.neptune: Any
 
         if self.enable_neptune:
             self.neptune = neptune.init_run(
@@ -136,27 +156,28 @@ class Experiment:
                 "speed": speed,
             }
 
-    def create_dataframe(self, parameters: dict):
+    def create_dataframe(self, parameters: dict[str, Any]) -> pd.DataFrame:
         return self.fix_names(
             self.remove_missing_and_inf(create_tsfresh_dataframe(parameters))
         )
 
-    def remove_gaps(self, df):
+    def remove_gaps(self, df: pd.DataFrame) -> pd.DataFrame:
         if self.perform_gap_corrections:
             # clean wrong values due to measure gaps
-            problematic_points = []
-            old_value = 0
+            problematic_points: list[Any] = []
+            old_value: float = 0
             for index, row in df.iterrows():
-                if (row["end_time"] - old_value) > 1:
+                end_time = float(row["end_time"])
+                if (end_time - old_value) > 1:
                     problematic_points.append(index)
-                old_value = row["end_time"]
+                old_value = end_time
             logger.warning(problematic_points)
             for point in problematic_points:
                 for i in range(-1 * self.horizon, self.window):
                     df.drop(point + i, inplace=True)
         return df
 
-    def remove_missing_and_inf(self, df):
+    def remove_missing_and_inf(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         The function removes columns with missing values and infinite values from a dataframe, renames
         the columns to remove special characters, and returns the modified dataframe.
@@ -178,9 +199,8 @@ class Experiment:
 
         return df
 
-    def fix_names(self, df):
+    def fix_names(self, df: pd.DataFrame) -> pd.DataFrame:
         # LightGBMError: Do not support special JSON characters in feature name.
-        import re
 
         # Fix values in part_of_day column (spaces to underscores) before pycaret one-hot encodes
         if "part_of_day" in df.columns:
@@ -189,11 +209,11 @@ class Experiment:
         # df = df.rename(columns = lambda x:re.sub('[^A-Za-z0-9_]+', '', x))
         # Change columns names ([LightGBM] Do not support special JSON characters in feature name.)
         # First replace spaces with underscores, then remove other special characters
-        new_names = {
+        new_names: dict[str, str] = {
             col: re.sub(r"[^A-Za-z0-9_]+", "", col.replace(" ", "_"))
             for col in df.columns
         }
-        new_n_list = list(new_names.values())
+        new_n_list: list[str] = list(new_names.values())
         # [LightGBM] Feature appears more than one time.
         new_names = {
             col: f"{new_col}_{i}" if new_col in new_n_list[:i] else new_col
@@ -202,22 +222,22 @@ class Experiment:
         df = df.rename(columns=new_names)
         return df
 
-    def create_train_dataframe(self):
+    def create_train_dataframe(self) -> None:
         """
         The function creates a training dataframe by removing gaps and creating a dataframe using the
         given train parameters.
         """
         self.train_df = self.remove_gaps(self.create_dataframe(self.train_parameters))
 
-    def create_unseen_data_dataframe(self):
+    def create_unseen_data_dataframe(self) -> None:
         self.unseen_data_df = self.remove_gaps(
             self.create_dataframe(self.unseen_data_parameters)
         )
 
-    def align_dataframe_columns(self):
+    def align_dataframe_columns(self) -> None:
         print("--------------------------------------------------")
-        train_df_columns = self.train_df.columns.tolist()
-        unseen_data_df_columns = self.unseen_data_df.columns.tolist()
+        train_df_columns: list[str] = self.train_df.columns.tolist()
+        unseen_data_df_columns: list[str] = self.unseen_data_df.columns.tolist()
         # print(self.train_df.columns.tolist())
         for train_column in train_df_columns:
             if train_column not in unseen_data_df_columns:
@@ -225,7 +245,7 @@ class Experiment:
                 self.train_df.drop(train_column, axis=1, inplace=True)
         print("--------------------------------------------------")
 
-    def setup_regressor(self):
+    def setup_regressor(self) -> None:
         self.regressor = setup(
             self.train_df,
             target="label",
@@ -247,27 +267,27 @@ class Experiment:
             #  profile=True,
         )
 
-    def get_regressor_param(self, param: str):
+    def get_regressor_param(self, param: str) -> Any:
         return get_config(param)
 
-    def get_model_name(self, model):
+    def get_model_name(self, model: Any) -> str:
         return model.__str__().split("(")[0]
 
-    def log_regressor_param(self, param: str):
+    def log_regressor_param(self, param: str) -> None:
         if self.enable_neptune:
             self.neptune[f"model/{param}"] = self.get_regressor_param(param).__str__()
             # self.neptune[f'model/{param}_html'].upload(
             #     neptune.types.File.as_html(self.get_regressor_param(param).__str__()))
         logger.info(self.get_regressor_param(param))
 
-    def compute_best_n_models(self, verbose=True):
-        exc_dict = {
+    def compute_best_n_models(self, verbose: bool = True) -> None:
+        exc_dict: dict[int, list[str]] = {
             1: [],
             2: ["catboost", "xgboost"],
             3: ["catboost", "xgboost", "et", "rf", "ada", "gbr"],
         }
-        add_metric("madex", "MADEX", madex, False)
-        add_metric("rmadex", "RMADEX", rmadex, False)
+        add_metric("madex", "MADEX", madex, greater_is_better=False)  # type: ignore[reportArgumentType]
+        add_metric("rmadex", "RMADEX", rmadex, greater_is_better=False)  # type: ignore[reportArgumentType]
         self.best_models = compare_models(
             exclude=exc_dict[self.speed],
             # RMSE sort
@@ -278,9 +298,7 @@ class Experiment:
         )
         self.models_comparison_df = pull()
 
-    def log_best_models(self):
-        import uuid
-
+    def log_best_models(self) -> None:
         for index, model in enumerate(self.best_models):
             save_model(
                 model,
@@ -289,29 +307,35 @@ class Experiment:
             logger.info(f"Model {(index + 1)}:")
             logger.info(model)
 
-    def calculate_prediction(self, model, custom_data=None, legend=""):
+    def calculate_prediction(
+        self, model: Any, custom_data: pd.DataFrame | None = None, legend: str = ""
+    ) -> tuple[Any, dict[str, int], float, float]:
         if not model:
             model = self.best_models[0]
         if self.enable_neptune:
             self.neptune["model/name"] = self.get_model_name(model.__str__())
             self.neptune["model/details"] = model.__str__()
-        pd = predict_model(model, data=custom_data)
-        print(pd.head())
+        pred_df = predict_model(model, data=custom_data)
+        print(pred_df.head())
 
         # workaround for indexing cega and madex problems
-        cega_pd = pd.reset_index(drop=True)
+        cega_pd = pred_df.reset_index(drop=True)
         (fig, res) = clarke_error_grid(
-            cega_pd["label"], cega_pd["prediction_label"], legend
+            cega_pd["label"].tolist(), cega_pd["prediction_label"].tolist(), legend
         )
-        rmse = np.sqrt(mean_squared_error(pd["label"], pd["prediction_label"]))
-        rmadex = np.sqrt(
-            mean_adjusted_exponent_error(cega_pd["label"], cega_pd["prediction_label"])
+        rmse_val: float = np.sqrt(
+            mean_squared_error(pred_df["label"], pred_df["prediction_label"])
+        )
+        rmadex_val: float = np.sqrt(
+            mean_adjusted_exponent_error(
+                cega_pd["label"].tolist(), cega_pd["prediction_label"].tolist()
+            )
         )
         print(res)
-        res = dict(zip(["A", "B", "C", "D", "E"], res))
-        return (fig, res, rmse, rmadex)
+        res_dict: dict[str, int] = dict(zip(["A", "B", "C", "D", "E"], res))
+        return (fig, res_dict, rmse_val, rmadex_val)
 
-    def predict_holdout(self, model=None):
+    def predict_holdout(self, model: Any = None) -> None:
         legend = f"[{self.patient}]Holdout_W{(self.window * 5)}_H{(self.horizon * 5)}"
         (
             self.holdout_cega_fig,
@@ -324,7 +348,7 @@ class Experiment:
             self.neptune["cega"].log(plt.gcf())
         # self.neptune[f'holdout/images/{legend}'].upload(neptune.types.File.as_image(self.holdout_cega_fig))
 
-    def predict_unseen(self, model=None):
+    def predict_unseen(self, model: Any = None) -> None:
         legend = (
             f"[{self.patient}]UnseenData_W{(self.window * 5)}_H{(self.horizon * 5)}"
         )
@@ -342,7 +366,7 @@ class Experiment:
             self.neptune["cega"].log(plt.gcf())
         # self.neptune[f'unseen/images/{legend}'].upload(neptune.types.File.as_image(self.unseen_cega_fig))
 
-    def run_experiment(self):
+    def run_experiment(self) -> None:
         start_time = time.time()
         self.create_train_dataframe()
         self.create_unseen_data_dataframe()
@@ -355,7 +379,7 @@ class Experiment:
             # self.neptune['pipeline'].log(self.get_regressor_param('pipeline'))
             self.neptune["model/train_columns"] = list(get_config("X_train").columns)
             self.neptune["model/comparison"].upload(
-                neptune.types.File.as_html(self.models_comparison_df)
+                File.as_html(self.models_comparison_df)
             )
         self.log_best_models()
         self.predict_holdout()
