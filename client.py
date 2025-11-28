@@ -3,6 +3,8 @@
 │  │  │├┤ │││ │
 └─┘┴─┘┴└─┘┘└┘ ┴
 Author: Stavros Pitoglou
+
+Client for streaming glucose data to the server.
 """
 
 from time import sleep
@@ -10,22 +12,31 @@ from time import sleep
 import requests
 from loguru import logger
 
-from config.simulation_config import INTERVAL, OHIO_ID
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+from src.config import get_config
 from src.helpers.fhir import create_fhir_json_from_reading
+
+# Streaming interval in seconds (default 5 sec = CGM measurement interval)
+INTERVAL = 5
 
 
 def stream_data(send_to_service: bool = True, verbose: bool = False):
-    """Συνάρτηση ανάκτησης, προετοιμασίας και αποστολής σειράς μετρήσεων
-        για το simulation και τη δοκιμή γεννήτριας μετρήσεων CGM
+    """
+    Stream glucose readings to the server.
+
+    Retrieves readings from the Ohio dataset and sends them as FHIR
+    observations to the REST API endpoint.
 
     Args:
-        send_to_service (bool, optional): Διακόπτης τελικής αποστολής στο service. Defaults to True.
-        verbose (bool, optional): Διακόπτης εκτεταμένων μηνυμάτων εκτέλεσης. Defaults to False.
+        send_to_service: Whether to actually POST to the service.
+        verbose: Enable verbose logging.
     """
+    config = get_config()
+    patient_id = config.default_patient_id
 
-    # Ορισμός της μεθόδου streaming από τον αντίστοιχο provider
-    provider = OhioBgcProvider(ohio_no=OHIO_ID)
+    logger.info(f"Starting glucose stream for patient {patient_id}")
+
+    provider = OhioBgcProvider(ohio_no=patient_id)
     stream = provider.simulate_glucose_stream()
     try:
         # Εκτέλεση ατέρμονου βρόχου έως την ακύρωση από το χρήστη

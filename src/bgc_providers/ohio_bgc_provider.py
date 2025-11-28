@@ -10,7 +10,7 @@ from src.interfaces.bgc_provider_interface import BgcProviderInterface
 
 
 class OhioBgcProvider(BgcProviderInterface):
-    def __init__(self, scope="train", ohio_no="559"):
+    def __init__(self, ohio_no: str | int, scope: str = "train"):
         self.patient = ohio_no
         self.source_file = "data/ohio/{0}/{1}-ws-{0}ing.xml".format(scope, ohio_no)
         self.xml = objectify.parse(open(self.source_file))

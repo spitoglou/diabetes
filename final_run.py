@@ -1,24 +1,78 @@
+"""
+Main experiment runner for glucose prediction models.
+
+Usage:
+    python final_run.py
+
+Configure via environment variables or .env file.
+"""
+
 import itertools
 
 from loguru import logger
 
-from src.helpers.experiment import Experiment
+from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+from src.config import get_config
+from src.logging_config import setup_logging
+from src.services.experiment_orchestrator import ExperimentOrchestrator
 
-patients = [559, 563, 570, 575, 588, 591]
-windows = [6, 12]
-horizons = [1, 6, 12]
-neptune = False
+# Experiment parameters
+PATIENTS = [559, 563, 570, 575, 588, 591]
+WINDOWS = [6, 12]  # Window sizes in 5-min intervals
+HORIZONS = [1, 6, 12]  # Prediction horizons in 5-min intervals
 
-patients = [563]
-windows = [12]
-horizons = [12]
+# Override for quick testing (comment out for full run)
+PATIENTS = [559]
+WINDOWS = [6]
+HORIZONS = [6]
+
+
+def run_experiments():
+    """Run experiments for all patient/window/horizon combinations."""
+    config = get_config()
+    setup_logging(level=config.log_level)
+
+    logger.info(
+        f"Starting experiments: {len(PATIENTS)} patients, "
+        f"{len(WINDOWS)} windows, {len(HORIZONS)} horizons"
+    )
+    logger.info(f"Neptune tracking: {config.enable_neptune}")
+
+    results = []
+
+    for patient, window, horizon in itertools.product(PATIENTS, WINDOWS, HORIZONS):
+        logger.info(f"{'=' * 60}")
+        logger.info(
+            f"Running experiment: Patient={patient}, Window={window}, Horizon={horizon}"
+        )
+
+        try:
+            # Create provider for training data
+            provider = OhioBgcProvider(scope="train", ohio_no=patient)
+
+            # Create orchestrator and run experiment
+            orchestrator = ExperimentOrchestrator(provider=provider, config=config)
+            result = orchestrator.run(
+                patient_id=patient,
+                window=window,
+                horizon=horizon,
+                enable_neptune=config.enable_neptune,
+            )
+
+            results.append(result)
+            logger.success(f"Experiment completed in {result.execution_time:.1f}s")
+
+        except Exception as e:
+            logger.exception(f"Experiment failed: {e}")
+
+    # Summary
+    logger.info(f"{'=' * 60}")
+    logger.info(
+        f"Completed {len(results)}/{len(PATIENTS) * len(WINDOWS) * len(HORIZONS)} experiments"
+    )
+
+    return results
+
 
 if __name__ == "__main__":
-    for patient, window, horizon in itertools.product(patients, windows, horizons):
-        exp = Experiment(patient, window, horizon, enable_neptune=neptune)
-        try:
-            exp.run_experiment()
-        except Exception as e:
-            logger.exception(e)
-            if neptune:
-                exp.neptune.stop()
+    run_experiments()
