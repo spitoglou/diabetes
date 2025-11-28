@@ -1,7 +1,8 @@
-# Core Architecture Specification
+# core Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change refactor-core-architecture. Update Purpose after archive.
+## Requirements
 ### Requirement: Centralized Configuration
 The system SHALL load all configuration from environment variables via a centralized `Config` class.
 
@@ -99,8 +100,6 @@ Log messages SHALL include contextual information (patient ID, window, horizon) 
 
 ---
 
-## MODIFIED Requirements
-
 ### Requirement: Experiment Execution
 The Experiment workflow SHALL be coordinated by ExperimentOrchestrator which composes pipeline components.
 
@@ -128,3 +127,4 @@ The server SHALL validate all input data before database operations.
 #### Scenario: Invalid measurement rejected
 - **WHEN** a malformed FHIR observation is POSTed
 - **THEN** the endpoint returns 400 with validation error details
+
