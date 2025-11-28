@@ -24,14 +24,15 @@ import streamsync as ss
 from loguru import logger
 
 from src.config import get_config
+from src.logging_config import setup_logging
 from src.mongo import MongoDB
 from src.repositories.measurement_repository import MeasurementRepository
 from src.repositories.prediction_repository import PredictionRepository
 
-# Initialize configuration and repositories
-logger.info("Application Start!")
-
+# Initialize configuration and logging
 config = get_config()
+setup_logging(level=config.log_level)
+logger.info(f"Logging initialized with level={config.log_level}, debug={config.debug}")
 LOW = config.glucose_low
 HIGH = config.glucose_high
 

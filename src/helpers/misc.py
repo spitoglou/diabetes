@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from loguru import logger
+
 
 def get_part_of_day(hour: int) -> str:
     """
@@ -28,13 +30,10 @@ def get_part_of_day(hour: int) -> str:
 
 def debug_print(title: str, message: Any) -> None:
     """
-    Print a debug message with formatted header.
+    Log a debug message with formatted header.
 
     Args:
         title: Title for the debug section.
-        message: Message content to print.
+        message: Message content to log.
     """
-    print("----------------------------------------------------------------")
-    print(f"----------------------{title}--------------------------")
-    print(message)
-    print("----------------------------------------------------------------")
+    logger.debug(f"[{title}] {message}")

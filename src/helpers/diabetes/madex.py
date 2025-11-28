@@ -4,6 +4,7 @@ from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+from loguru import logger
 from numpy.typing import ArrayLike
 from sklearn.metrics import mean_squared_error
 
@@ -44,7 +45,7 @@ def mean_adjusted_exponent_error(
     for i in range(len(y)):
         exp = exponent(y_pred[i], y[i])
         if verbose:
-            print(exp)
+            logger.debug(f"Exponent value: {exp}")
         # Clip base and exponent to avoid overflow
         base: float = min(abs(y_pred[i] - y[i]), 1e6)
         exp_clipped: float = min(max(exp, 0), 10)

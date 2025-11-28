@@ -187,15 +187,12 @@ class Experiment:
         columns to remove special characters.
         """
         # sourcery skip: extract-duplicate-method
-        print("Original Dataframe")
-        print(df.shape)
+        logger.debug(f"Original Dataframe shape: {df.shape}")
         df.dropna(axis=1, inplace=True)
-        print("Dataframe after removing cols with NaNs")
-        print(df.shape)
+        logger.debug(f"Dataframe after removing cols with NaNs: {df.shape}")
         df.replace([np.inf, -np.inf], np.nan, inplace=True)
         df.dropna(axis=1, inplace=True)
-        print("Dataframe after removing cols with infinites")
-        print(df.shape)
+        logger.debug(f"Dataframe after removing cols with infinites: {df.shape}")
 
         return df
 
@@ -235,15 +232,14 @@ class Experiment:
         )
 
     def align_dataframe_columns(self) -> None:
-        print("--------------------------------------------------")
+        logger.debug("Aligning dataframe columns")
         train_df_columns: list[str] = self.train_df.columns.tolist()
         unseen_data_df_columns: list[str] = self.unseen_data_df.columns.tolist()
-        # print(self.train_df.columns.tolist())
         for train_column in train_df_columns:
             if train_column not in unseen_data_df_columns:
-                print(f"Dropping {train_column}")
+                logger.debug(f"Dropping column: {train_column}")
                 self.train_df.drop(train_column, axis=1, inplace=True)
-        print("--------------------------------------------------")
+        logger.debug("Column alignment complete")
 
     def setup_regressor(self) -> None:
         self.regressor = setup(
@@ -316,7 +312,7 @@ class Experiment:
             self.neptune["model/name"] = self.get_model_name(model.__str__())
             self.neptune["model/details"] = model.__str__()
         pred_df = predict_model(model, data=custom_data)
-        print(pred_df.head())
+        logger.debug(f"Prediction head:\n{pred_df.head()}")
 
         # workaround for indexing cega and madex problems
         cega_pd = pred_df.reset_index(drop=True)
@@ -331,7 +327,7 @@ class Experiment:
                 cega_pd["label"].tolist(), cega_pd["prediction_label"].tolist()
             )
         )
-        print(res)
+        logger.debug(f"CEGA zones: {res}")
         res_dict: dict[str, int] = dict(zip(["A", "B", "C", "D", "E"], res))
         return (fig, res_dict, rmse_val, rmadex_val)
 
@@ -374,7 +370,7 @@ class Experiment:
         self.setup_regressor()
         self.log_regressor_param("pipeline")
         self.compute_best_n_models(verbose=True)
-        print(self.models_comparison_df)
+        logger.info(f"Model comparison:\n{self.models_comparison_df}")
         if self.enable_neptune:
             # self.neptune['pipeline'].log(self.get_regressor_param('pipeline'))
             self.neptune["model/train_columns"] = list(get_config("X_train").columns)

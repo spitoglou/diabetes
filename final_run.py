@@ -22,8 +22,8 @@ WINDOWS = [6, 12]  # Window sizes in 5-min intervals
 HORIZONS = [1, 6, 12]  # Prediction horizons in 5-min intervals
 
 # Override for quick testing (comment out for full run)
-PATIENTS = [559]
-WINDOWS = [6]
+PATIENTS = [563]
+WINDOWS = [12]
 HORIZONS = [6]
 
 

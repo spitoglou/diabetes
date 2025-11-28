@@ -135,12 +135,22 @@ class PredictionService:
             stream_df, window, horizon
         )
 
+        if self.config.debug:
+            logger.debug(f"Feature shape: {features.shape}")
+            logger.debug(f"Feature columns: {list(features.columns)[:10]}...")
+
         # Correct feature names for model compatibility
         features = self._correct_feature_names(features, self._model_features)  # pyright: ignore[reportArgumentType]
+
+        if self.config.debug:
+            logger.debug(f"Corrected feature shape: {features.shape}")
 
         # Make prediction
         prediction_result = predict_model(self._model, features)
         predicted_value = prediction_result.prediction_label.iloc[0]
+
+        if self.config.debug:
+            logger.debug(f"Raw prediction result: {predicted_value}")
 
         # Get last measurement time
         last_measurement = measurements_df.iloc[-1]

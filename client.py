@@ -7,20 +7,28 @@ Author: Stavros Pitoglou
 Client for streaming glucose data to the server.
 """
 
+# Initialize logging BEFORE other imports to ensure all modules use configured logger
+from src.config import get_config
+from src.logging_config import setup_logging
+
+config = get_config()
+setup_logging(level=config.log_level)
+
 from time import sleep
 
 import requests
 from loguru import logger
 
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
-from src.config import get_config
 from src.helpers.fhir import create_fhir_json_from_reading
+
+logger.info(f"Logging initialized with level={config.log_level}, debug={config.debug}")
 
 # Streaming interval in seconds (default 5 sec = CGM measurement interval)
 INTERVAL = 5
 
 
-def stream_data(send_to_service: bool = True, verbose: bool = False):
+def stream_data(send_to_service: bool = True):
     """
     Stream glucose readings to the server.
 
@@ -29,7 +37,6 @@ def stream_data(send_to_service: bool = True, verbose: bool = False):
 
     Args:
         send_to_service: Whether to actually POST to the service.
-        verbose: Enable verbose logging.
     """
     config = get_config()
     patient_id = config.default_patient_id
@@ -39,26 +46,27 @@ def stream_data(send_to_service: bool = True, verbose: bool = False):
     provider = OhioBgcProvider(ohio_no=patient_id)
     stream = provider.simulate_glucose_stream()
     try:
-        # Εκτέλεση ατέρμονου βρόχου έως την ακύρωση από το χρήστη
         while True:
-            # ανάκτηση επόμενης μέτρησης
             values = next(stream)
-            logger.info(values) if verbose else ...
-            # κλήση μεθόδου μετατροπής της μέτρησης σε αντικέιμενο FHIR
+            if config.debug:
+                logger.debug(f"Raw glucose values: {values}")
+
             payload = create_fhir_json_from_reading(values)
-            logger.info(payload) if verbose else ...
-            # αποστολή στο RESTful endpoint του service (εφόσον είναι ενεργοποιημένη)
+            if config.debug:
+                logger.debug(f"FHIR payload: {payload}")
+
             if send_to_service:
                 r = requests.post("http://localhost:8000/bg/reading", data=payload)
-                logger.info(r.status_code) if verbose else ...
-                logger.info(r.text) if verbose else ...
+                if config.debug:
+                    logger.debug(f"Response status: {r.status_code}")
+                    logger.debug(f"Response body: {r.text}")
                 if r.status_code != 200:
                     logger.warning(r.text)
                 logger.success(values)
             sleep(INTERVAL)
     except KeyboardInterrupt:
-        print("Interrupted by the user")
+        logger.info("Stream interrupted by user")
 
 
 if __name__ == "__main__":
-    stream_data(send_to_service=True, verbose=False)
+    stream_data(send_to_service=True)

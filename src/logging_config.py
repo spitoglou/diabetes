@@ -40,14 +40,16 @@ def setup_logging(
     # Remove default handler
     logger.remove()
 
-    # Add stderr handler
+    # Add stdout handler (more visible in most terminals than stderr)
     logger.add(
-        sys.stderr,
+        sys.stdout,
         format=format_string,
         level=log_level,
         colorize=True,
-        filter=lambda record: record["extra"].setdefault("context", ""),
     )
+
+    # Configure default context for all loggers
+    logger.configure(extra={"context": ""})
 
     # Add file handler if specified
     if log_file:
@@ -58,7 +60,6 @@ def setup_logging(
             rotation="10 MB",
             retention="7 days",
             compression="zip",
-            filter=lambda record: record["extra"].setdefault("context", ""),
         )
 
 

@@ -84,6 +84,7 @@ from types import ModuleType
 from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
+from loguru import logger
 
 
 def clarke_error_grid(
@@ -110,15 +111,14 @@ def clarke_error_grid(
 
     # Checks to see if the values are within the normal physiological range, otherwise it gives a warning
     if max(ref_values) > 400 or max(pred_values) > 400:
-        print(
-            "Input Warning: the maximum reference value {} or the maximum prediction value {} exceeds the normal \
-         physiological range of glucose (<400 mg/dl).".format(
-                max(ref_values), max(pred_values)
-            )
+        logger.warning(
+            f"The maximum reference value {max(ref_values)} or the maximum prediction value "
+            f"{max(pred_values)} exceeds the normal physiological range of glucose (<400 mg/dl)."
         )
     if min(ref_values) < 0 or min(pred_values) < 0:
-        print(
-            f"Input Warning: the minimum reference value {min(ref_values)} or the minimum prediction value {min(pred_values)} is less than 0 mg/dl."
+        logger.warning(
+            f"The minimum reference value {min(ref_values)} or the minimum prediction value "
+            f"{min(pred_values)} is less than 0 mg/dl."
         )
 
     # Clear plot
