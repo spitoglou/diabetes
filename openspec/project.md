@@ -259,7 +259,6 @@ config.is_valid_patient_id("559")  # True
 - Tool: `uv` (modern Python package manager) - use for all package operations
 - Lock file: `uv.lock`
 - Metadata: `pyproject.toml`
-- Dependencies: `requirements.txt` (for reference/compatibility)
 
 **Common uv commands:**
 ```bash
