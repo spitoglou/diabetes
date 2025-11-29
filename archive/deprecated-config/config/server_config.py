@@ -1,0 +1,8 @@
+DEBUG = False
+
+OHIO_ID = '559'
+
+WINDOW_STEPS = 6
+PREDICTION_HORIZON = 6
+
+DATABASE = 'test_database_1'

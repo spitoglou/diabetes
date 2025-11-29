@@ -41,6 +41,11 @@ Diabetes blood glucose (BG) prediction system developed for a PhD thesis by Stav
 
 ## Project Conventions
 
+### Documentation
+- Keep `README.md` up to date when making significant changes to the project
+- Update README when: adding/removing entry points, changing installation steps, modifying project structure, or updating dependencies
+- README should reflect the current state of the project for new developers
+
 ### Code Style
 - Standard Python conventions (PEP 8)
 - Type hints required in all files (function signatures, class attributes, and variables where type is not obvious)
@@ -130,7 +135,7 @@ diabetes/
 │   │   └── dataframe.py         # DataFrame utilities
 │   └── interfaces/
 │       └── bgc_provider_interface.py
-├── config/                      # Configuration templates
+├── archive/                     # Archived/deprecated files
 ├── data/                        # Datasets
 ├── models/                      # Trained model artifacts
 ├── dataframes/                  # Cached feature dataframes
@@ -196,7 +201,7 @@ diabetes/
 
 **MongoDB Atlas:**
 - Remote cloud database for measurement persistence
-- Connection configured via `config/mongo_config.py`
+- Connection configured via `.env` file (`MONGO_URI`)
 - Supports change streams for event-driven prediction
 
 **Neptune.ai:**
@@ -250,10 +255,6 @@ config.glucose_high  # 180
 config.valid_patient_ids  # (559, 563, 570, 575, 588, 591)
 config.is_valid_patient_id("559")  # True
 ```
-
-**Legacy Configuration Templates** (in `config/`):
-- `mongo_config.py.template` - MongoDB connection (deprecated)
-- `server_config.py.template` - FastAPI settings (deprecated)
 
 **Package Management:**
 - Tool: `uv` (modern Python package manager) - use for all package operations
