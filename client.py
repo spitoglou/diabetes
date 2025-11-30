@@ -66,5 +66,10 @@ def stream_data(send_to_service: bool = True):
         logger.info("Stream interrupted by user")
 
 
-if __name__ == "__main__":
+def main():
+    """CLI entry point for the client."""
     stream_data(send_to_service=True)
+
+
+if __name__ == "__main__":
+    main()

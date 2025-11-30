@@ -36,15 +36,25 @@ cp .env.example .env
 
 ### Running
 
+**CLI Commands:**
+```bash
+# Start the API server
+uv run diabetes-server
+
+# Start the glucose streaming client
+uv run diabetes-client
+
+# Start the prediction service
+uv run diabetes-predict
+
+# Monitor database for changes (inserts/updates)
+uv run diabetes-db-monitor
+```
+
+**Scripts:**
 ```bash
 # Run an experiment
 uv run python final_run.py
-
-# Start the API server
-uv run python server.py
-
-# Start the prediction service
-uv run python load_model_and_predict.py
 
 # Launch the web dashboard
 cd mobile && uv run streamsync run .

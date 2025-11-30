@@ -95,5 +95,10 @@ def run_watcher():
                     handle_new_data(service, patient_id, config)
 
 
-if __name__ == "__main__":
+def main():
+    """CLI entry point for the prediction service."""
     run_watcher()
+
+
+if __name__ == "__main__":
+    main()

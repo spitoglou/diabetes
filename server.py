@@ -171,5 +171,10 @@ async def post_reading(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-if __name__ == "__main__":
+def main():
+    """CLI entry point for the server."""
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+if __name__ == "__main__":
+    main()

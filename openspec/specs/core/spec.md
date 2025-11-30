@@ -141,3 +141,54 @@ The server SHALL validate all input data before database operations.
 - **WHEN** a malformed FHIR observation is POSTed
 - **THEN** the endpoint returns 400 with validation error details
 
+### Requirement: CLI Entry Points
+The system SHALL provide named CLI commands for core executable scripts via `pyproject.toml` entry points.
+
+The following commands SHALL be available after package installation:
+- `diabetes-server`: Start the FastAPI server for receiving CGM measurements
+- `diabetes-client`: Start the glucose data streaming client
+- `diabetes-predict`: Start the real-time prediction watcher service
+
+Each CLI command SHALL invoke the appropriate main function from its module without requiring `python <script>.py` invocation.
+
+#### Scenario: Start server via CLI
+- **WHEN** a user runs `diabetes-server` from the command line
+- **THEN** the FastAPI server starts on port 8000 and accepts CGM measurements
+
+#### Scenario: Start client via CLI
+- **WHEN** a user runs `diabetes-client` from the command line
+- **THEN** the glucose streaming client starts and sends data to the server
+
+#### Scenario: Start prediction service via CLI
+- **WHEN** a user runs `diabetes-predict` from the command line
+- **THEN** the prediction watcher service starts monitoring for new measurements
+
+#### Scenario: CLI commands available after install
+- **WHEN** the package is installed via `uv sync` or `pip install -e .`
+- **THEN** all three CLI commands are available in the environment's PATH
+
+### Requirement: Database Change Monitor
+The system SHALL provide a database monitoring script that watches all collections in the configured MongoDB database for changes.
+
+The monitor SHALL log a message when an insert or update operation is detected on any collection.
+
+The monitor SHALL use MongoDB change streams to receive real-time notifications.
+
+The monitor SHALL be available via the `diabetes-db-monitor` CLI command.
+
+#### Scenario: Monitor detects insert operation
+- **WHEN** a new document is inserted into any collection in the default database
+- **THEN** the monitor logs a message indicating the collection name and operation type
+
+#### Scenario: Monitor detects update operation
+- **WHEN** a document is updated in any collection in the default database
+- **THEN** the monitor logs a message indicating the collection name and operation type
+
+#### Scenario: Start monitor via CLI
+- **WHEN** a user runs `diabetes-db-monitor` from the command line
+- **THEN** the monitor starts watching all collections and logs connection status
+
+#### Scenario: Monitor handles connection errors gracefully
+- **WHEN** the MongoDB connection is unavailable or interrupted
+- **THEN** the monitor logs an error message and exits gracefully
+
