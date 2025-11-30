@@ -9,12 +9,11 @@ Client for streaming glucose data to the server.
 
 from time import sleep
 
-import requests
 from loguru import logger
 
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
 from src.config import get_config
-from src.helpers.fhir import create_fhir_json_from_reading
+from src.helpers.client_helpers import send_reading
 from src.logging_config import setup_logging
 
 config = get_config()
@@ -46,24 +45,9 @@ def stream_data(send_to_service: bool = True):
     try:
         while True:
             values = next(stream)
-            if config.debug:
-                logger.debug(f"Raw glucose values: {values}")
-
-            payload = create_fhir_json_from_reading(values)
-            if config.debug:
-                logger.debug(f"FHIR payload: {payload}")
 
             if send_to_service:
-                r = requests.post(
-                    f"{config.server_url}/bg/reading",
-                    data=payload,
-                    timeout=config.request_timeout,
-                )
-                if config.debug:
-                    logger.debug(f"Response status: {r.status_code}")
-                    logger.debug(f"Response body: {r.text}")
-                if r.status_code != 200:
-                    logger.warning(r.text)
+                send_reading(values, config)
                 logger.success(values)
             sleep(INTERVAL)
     except KeyboardInterrupt:

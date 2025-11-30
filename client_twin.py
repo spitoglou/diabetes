@@ -11,12 +11,11 @@ Starts streaming from a point in the dataset matching the current time of day.
 from datetime import datetime, timezone
 from time import sleep
 
-import requests
 from loguru import logger
 
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
 from src.config import get_config
-from src.helpers.fhir import create_fhir_json_from_reading
+from src.helpers.client_helpers import send_reading
 from src.logging_config import setup_logging
 
 # Streaming interval in seconds (default 5 sec = CGM measurement interval)
@@ -121,24 +120,8 @@ def stream_data_twin(send_to_service: bool = True):
             values["time"] = create_twin_timestamp(original_ts, now)
             values["timestamp"] = datetime.fromisoformat(values["time"]).timestamp()
 
-            if config.debug:
-                logger.debug(f"Twin glucose values: {values}")
-
-            payload = create_fhir_json_from_reading(values)
-            if config.debug:
-                logger.debug(f"FHIR payload: {payload}")
-
             if send_to_service:
-                r = requests.post(
-                    f"{config.server_url}/bg/reading",
-                    data=payload,
-                    timeout=config.request_timeout,
-                )
-                if config.debug:
-                    logger.debug(f"Response status: {r.status_code}")
-                    logger.debug(f"Response body: {r.text}")
-                if r.status_code != 200:
-                    logger.warning(r.text)
+                send_reading(values, config)
                 logger.success(f"BG: {values['value']} mg/dL @ {values['time']}")
 
             start_index += 1

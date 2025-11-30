@@ -33,6 +33,8 @@ The system SHALL provide a `.env.example` file documenting all required environm
 ### Requirement: Repository Pattern for Data Access
 The system SHALL access MongoDB through repository classes that encapsulate all database operations.
 
+The system SHALL provide a `BaseRepository` class containing shared repository functionality (collection access, validation, common CRUD operations).
+
 The system SHALL validate patient IDs against a whitelist before constructing collection names.
 
 #### Scenario: Save measurement via repository
@@ -47,7 +49,9 @@ The system SHALL validate patient IDs against a whitelist before constructing co
 - **WHEN** recent measurements are requested for a patient
 - **THEN** the repository returns them sorted by timestamp descending with configurable limit
 
----
+#### Scenario: Repository inheritance
+- **WHEN** a new repository type is needed
+- **THEN** it can inherit from BaseRepository to reuse common functionality
 
 ### Requirement: Dependency Injection
 The system SHALL use constructor injection for all service dependencies.

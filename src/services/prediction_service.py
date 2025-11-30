@@ -2,7 +2,6 @@
 
 import glob
 import os
-import re
 from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
@@ -11,6 +10,7 @@ from loguru import logger
 from pycaret.regression import load_model, predict_model
 
 from src.config import Config, get_config
+from src.helpers.dataframe import fix_column_names
 from src.pipeline.feature_engineer import FeatureEngineer
 from src.repositories.measurement_repository import MeasurementRepository
 from src.repositories.prediction_repository import PredictionRepository
@@ -226,20 +226,11 @@ class PredictionService:
         """
         Correct DataFrame column names for model compatibility.
 
-        LightGBM doesn't support special characters in feature names.
-        Also adds any missing features required by the model.
+        Uses shared helper for column sanitization, then adds
+        any missing features required by the model.
         """
-        # First, sanitize column names
-        new_names = {
-            col: re.sub(r"[^A-Za-z0-9_]+", "", col.replace(" ", "_"))
-            for col in df.columns
-        }
-        new_n_list = list(new_names.values())
-        new_names = {
-            col: f"{new_col}_{i}" if new_col in new_n_list[:i] else new_col
-            for i, (col, new_col) in enumerate(new_names.items())
-        }
-        df = df.rename(columns=new_names)
+        # Sanitize column names using shared helper
+        df = fix_column_names(df)
 
         # Add missing features required by model
         for feat in model_features:

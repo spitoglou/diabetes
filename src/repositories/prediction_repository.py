@@ -3,14 +3,13 @@
 from datetime import datetime
 from typing import Any, Dict, List
 
-from loguru import logger
-from pymongo.collection import Collection
 from pymongo.database import Database
 
-from src.config import Config, get_config
+from src.config import Config
+from src.repositories.base_repository import BaseRepository
 
 
-class PredictionRepository:
+class PredictionRepository(BaseRepository):
     """
     Repository for CRUD operations on glucose predictions.
 
@@ -26,43 +25,15 @@ class PredictionRepository:
             db: MongoDB database instance.
             config: Application configuration (uses global if not provided).
         """
-        self.db = db
-        self.config = config or get_config()
+        super().__init__(db, config)
 
-    def _get_collection(self, patient_id: str) -> Collection:
-        """
-        Get predictions collection for a patient with validation.
+    def _get_collection_name(self, patient_id: str) -> str:
+        """Get the collection name for predictions."""
+        return f"predictions_{patient_id}"
 
-        Args:
-            patient_id: Patient identifier.
-
-        Returns:
-            MongoDB collection for the patient's predictions.
-
-        Raises:
-            ValueError: If patient ID is not in whitelist.
-        """
-        if not self.config.is_valid_patient_id(patient_id):
-            raise ValueError(
-                f"Invalid patient ID: {patient_id}. Valid IDs: {self.config.valid_patient_ids}"
-            )
-        return self.db[f"predictions_{patient_id}"]
-
-    def save(self, patient_id: str, prediction: Dict[str, Any]) -> str:
-        """
-        Save a prediction to the database.
-
-        Args:
-            patient_id: Patient identifier.
-            prediction: Prediction data with origin_time, prediction_time, value.
-
-        Returns:
-            Inserted document ID as string.
-        """
-        collection = self._get_collection(patient_id)
-        result = collection.insert_one(prediction)
-        logger.debug(f"Saved prediction for patient {patient_id}: {result.inserted_id}")
-        return str(result.inserted_id)
+    def _get_entity_name(self) -> str:
+        """Get the entity name for logging."""
+        return "prediction"
 
     def get_recent(
         self,
@@ -75,22 +46,13 @@ class PredictionRepository:
 
         Args:
             patient_id: Patient identifier.
-            limit: Maximum number of records to return.
+            limit: Maximum number of records to return (default 50 for predictions).
             projection: Fields to include/exclude.
 
         Returns:
             List of prediction documents, sorted by most recent first.
         """
-        collection = self._get_collection(patient_id)
-        cursor = (
-            collection.find(
-                {},
-                projection=projection,
-            )
-            .sort([("_id", -1)])
-            .limit(limit)
-        )
-        return list(cursor)
+        return super().get_recent(patient_id, limit, projection)
 
     def get_by_prediction_time_range(
         self,
@@ -125,33 +87,3 @@ class PredictionRepository:
             .limit(limit)
         )
         return list(cursor)
-
-    def count(self, patient_id: str) -> int:
-        """
-        Count total predictions for a patient.
-
-        Args:
-            patient_id: Patient identifier.
-
-        Returns:
-            Total document count.
-        """
-        collection = self._get_collection(patient_id)
-        return collection.count_documents({})
-
-    def delete_all(self, patient_id: str) -> int:
-        """
-        Delete all predictions for a patient (use with caution).
-
-        Args:
-            patient_id: Patient identifier.
-
-        Returns:
-            Number of deleted documents.
-        """
-        collection = self._get_collection(patient_id)
-        result = collection.delete_many({})
-        logger.warning(
-            f"Deleted {result.deleted_count} predictions for patient {patient_id}"
-        )
-        return result.deleted_count

@@ -3,14 +3,13 @@
 from datetime import datetime
 from typing import Any, Dict, List
 
-from loguru import logger
-from pymongo.collection import Collection
 from pymongo.database import Database
 
-from src.config import Config, get_config
+from src.config import Config
+from src.repositories.base_repository import BaseRepository
 
 
-class MeasurementRepository:
+class MeasurementRepository(BaseRepository):
     """
     Repository for CRUD operations on glucose measurements.
 
@@ -26,73 +25,15 @@ class MeasurementRepository:
             db: MongoDB database instance.
             config: Application configuration (uses global if not provided).
         """
-        self.db = db
-        self.config = config or get_config()
+        super().__init__(db, config)
 
-    def _get_collection(self, patient_id: str) -> Collection:
-        """
-        Get collection for a patient with validation.
+    def _get_collection_name(self, patient_id: str) -> str:
+        """Get the collection name for measurements."""
+        return f"measurements_{patient_id}"
 
-        Args:
-            patient_id: Patient identifier.
-
-        Returns:
-            MongoDB collection for the patient.
-
-        Raises:
-            ValueError: If patient ID is not in whitelist.
-        """
-        if not self.config.is_valid_patient_id(patient_id):
-            raise ValueError(
-                f"Invalid patient ID: {patient_id}. Valid IDs: {self.config.valid_patient_ids}"
-            )
-        return self.db[f"measurements_{patient_id}"]
-
-    def save(self, patient_id: str, measurement: Dict[str, Any]) -> str:
-        """
-        Save a measurement to the database.
-
-        Args:
-            patient_id: Patient identifier.
-            measurement: FHIR-formatted measurement data.
-
-        Returns:
-            Inserted document ID as string.
-        """
-        collection = self._get_collection(patient_id)
-        result = collection.insert_one(measurement)
-        logger.debug(
-            f"Saved measurement for patient {patient_id}: {result.inserted_id}"
-        )
-        return str(result.inserted_id)
-
-    def get_recent(
-        self,
-        patient_id: str,
-        limit: int = 100,
-        projection: Dict[str, int] | None = None,
-    ) -> List[Dict[str, Any]]:
-        """
-        Get recent measurements for a patient.
-
-        Args:
-            patient_id: Patient identifier.
-            limit: Maximum number of records to return.
-            projection: Fields to include/exclude.
-
-        Returns:
-            List of measurement documents, sorted by most recent first.
-        """
-        collection = self._get_collection(patient_id)
-        cursor = (
-            collection.find(
-                {},
-                projection=projection,
-            )
-            .sort([("_id", -1)])
-            .limit(limit)
-        )
-        return list(cursor)
+    def _get_entity_name(self) -> str:
+        """Get the entity name for logging."""
+        return "measurement"
 
     def get_by_date_range(
         self,
@@ -127,36 +68,6 @@ class MeasurementRepository:
             .limit(limit)
         )
         return list(cursor)
-
-    def count(self, patient_id: str) -> int:
-        """
-        Count total measurements for a patient.
-
-        Args:
-            patient_id: Patient identifier.
-
-        Returns:
-            Total document count.
-        """
-        collection = self._get_collection(patient_id)
-        return collection.count_documents({})
-
-    def delete_all(self, patient_id: str) -> int:
-        """
-        Delete all measurements for a patient (use with caution).
-
-        Args:
-            patient_id: Patient identifier.
-
-        Returns:
-            Number of deleted documents.
-        """
-        collection = self._get_collection(patient_id)
-        result = collection.delete_many({})
-        logger.warning(
-            f"Deleted {result.deleted_count} measurements for patient {patient_id}"
-        )
-        return result.deleted_count
 
     def watch(self, patient_id: str, pipeline: List[Dict] | None = None):
         """
