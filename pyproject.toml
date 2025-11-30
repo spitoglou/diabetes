@@ -19,6 +19,7 @@ dependencies = [
     "python-dotenv>=1.2.1",
     "pyarrow>=22.0.0",
     "notebook>=7.5.0",
+    "simglucose>=0.2.11",
 ]
 
 [build-system]

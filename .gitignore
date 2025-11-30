@@ -15,3 +15,4 @@ mobile/config/mongo_config.py
 config/server_config.py
 config/simulation_config.py
 models/*.pkl
+results/
