@@ -3,9 +3,6 @@
 from datetime import datetime
 from typing import Any, Dict, List
 
-from pymongo.database import Database
-
-from src.config import Config
 from src.repositories.base_repository import BaseRepository
 
 
@@ -16,16 +13,6 @@ class MeasurementRepository(BaseRepository):
     Encapsulates all MongoDB access for measurement data with
     patient ID validation and efficient query patterns.
     """
-
-    def __init__(self, db: Database, config: Config | None = None):
-        """
-        Initialize repository with database connection.
-
-        Args:
-            db: MongoDB database instance.
-            config: Application configuration (uses global if not provided).
-        """
-        super().__init__(db, config)
 
     def _get_collection_name(self, patient_id: str) -> str:
         """Get the collection name for measurements."""

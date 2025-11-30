@@ -7,7 +7,7 @@ max-args=10
 max-locals=20
 
 [FORMAT]
-max-line-length=100
+max-line-length=110
 
 [MESSAGES CONTROL]
 disable=

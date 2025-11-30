@@ -40,7 +40,6 @@ class BaseRepository(ABC):
         Returns:
             Collection name string.
         """
-        pass
 
     @abstractmethod
     def _get_entity_name(self) -> str:
@@ -50,7 +49,6 @@ class BaseRepository(ABC):
         Returns:
             Entity name (e.g., 'measurement', 'prediction').
         """
-        pass
 
     def _get_collection(self, patient_id: str) -> Collection:
         """
