@@ -61,6 +61,9 @@ class Config:
     # Application settings
     debug: bool = field(default_factory=lambda: _get_env_bool("DEBUG", False))
     log_level: str = field(default_factory=lambda: _get_env("LOG_LEVEL", "INFO"))
+    server_url: str = field(
+        default_factory=lambda: _get_env("SERVER_URL", "http://localhost:8000")
+    )
 
     # Prediction settings
     default_patient_id: str = field(

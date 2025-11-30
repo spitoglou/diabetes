@@ -54,7 +54,7 @@ def stream_data(send_to_service: bool = True):
                 logger.debug(f"FHIR payload: {payload}")
 
             if send_to_service:
-                r = requests.post("http://localhost:8000/bg/reading", data=payload)
+                r = requests.post(f"{config.server_url}/bg/reading", data=payload)
                 if config.debug:
                     logger.debug(f"Response status: {r.status_code}")
                     logger.debug(f"Response body: {r.text}")

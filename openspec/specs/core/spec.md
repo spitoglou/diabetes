@@ -6,7 +6,7 @@ TBD - created by archiving change refactor-core-architecture. Update Purpose aft
 ### Requirement: Centralized Configuration
 The system SHALL load all configuration from environment variables via a centralized `Config` class.
 
-The system SHALL NOT contain hardcoded credentials, API tokens, or connection strings in source code.
+The system SHALL NOT contain hardcoded credentials, API tokens, connection strings, or service URLs in source code.
 
 The system SHALL provide a `.env.example` file documenting all required environment variables.
 
@@ -22,7 +22,9 @@ The system SHALL provide a `.env.example` file documenting all required environm
 - **WHEN** an invalid patient ID is referenced
 - **THEN** the system rejects the operation with a validation error
 
----
+#### Scenario: Client uses configured server URL
+- **WHEN** a client script sends data to the server
+- **THEN** it uses the SERVER_URL from configuration (default: http://localhost:8000)
 
 ### Requirement: Repository Pattern for Data Access
 The system SHALL access MongoDB through repository classes that encapsulate all database operations.
