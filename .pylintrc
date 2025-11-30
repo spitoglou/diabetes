@@ -1,0 +1,16 @@
+[MAIN]
+ignore=archive,.venv
+
+[DESIGN]
+max-attributes=20
+max-args=10
+max-locals=20
+
+[FORMAT]
+max-line-length=100
+
+[MESSAGES CONTROL]
+disable=
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-positional-arguments

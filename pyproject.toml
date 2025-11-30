@@ -41,3 +41,8 @@ filterwarnings = [
     "ignore::UserWarning:tsfresh",
     "ignore::DeprecationWarning:pkg_resources",
 ]
+
+[dependency-groups]
+dev = [
+    "pylint>=4.0.4",
+]

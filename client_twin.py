@@ -129,7 +129,11 @@ def stream_data_twin(send_to_service: bool = True):
                 logger.debug(f"FHIR payload: {payload}")
 
             if send_to_service:
-                r = requests.post(f"{config.server_url}/bg/reading", data=payload)
+                r = requests.post(
+                    f"{config.server_url}/bg/reading",
+                    data=payload,
+                    timeout=config.request_timeout,
+                )
                 if config.debug:
                     logger.debug(f"Response status: {r.status_code}")
                     logger.debug(f"Response body: {r.text}")

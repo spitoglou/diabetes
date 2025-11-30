@@ -64,6 +64,9 @@ class Config:
     server_url: str = field(
         default_factory=lambda: _get_env("SERVER_URL", "http://localhost:8000")
     )
+    request_timeout: int = field(
+        default_factory=lambda: _get_env_int("REQUEST_TIMEOUT", 30)
+    )
 
     # Prediction settings
     default_patient_id: str = field(

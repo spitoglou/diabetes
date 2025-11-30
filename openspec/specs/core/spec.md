@@ -26,6 +26,10 @@ The system SHALL provide a `.env.example` file documenting all required environm
 - **WHEN** a client script sends data to the server
 - **THEN** it uses the SERVER_URL from configuration (default: http://localhost:8000)
 
+#### Scenario: Client uses configured request timeout
+- **WHEN** a client script makes an HTTP request
+- **THEN** it uses the REQUEST_TIMEOUT from configuration (default: 30 seconds)
+
 ### Requirement: Repository Pattern for Data Access
 The system SHALL access MongoDB through repository classes that encapsulate all database operations.
 
