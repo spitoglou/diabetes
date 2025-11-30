@@ -1,3 +1,9 @@
+"""Miscellaneous helper functions.
+
+This module provides utility functions used across the diabetes prediction system,
+including time-of-day classification and debug logging helpers.
+"""
+
 from __future__ import annotations
 
 from typing import Any

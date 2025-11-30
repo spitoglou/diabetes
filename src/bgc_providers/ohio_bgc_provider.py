@@ -1,3 +1,9 @@
+"""Ohio T1DM dataset blood glucose provider.
+
+This module provides the OhioBgcProvider class for loading and streaming
+glucose measurements from the Ohio Type 1 Diabetes Mellitus dataset (XML format).
+"""
+
 from __future__ import annotations
 
 from collections.abc import Generator
@@ -29,12 +35,15 @@ class OhioBgcProvider(BgcProviderInterface):
         return glucose_levels_xml
 
     def ts_to_datetime(self, ts: str) -> datetime:
+        """Convert timestamp string to datetime object."""
         return datetime.strptime(ts, "%d-%m-%Y %H:%M:%S")
 
     def ts_to_timestamp(self, ts: str) -> float:
+        """Convert timestamp string to Unix timestamp."""
         return self.ts_to_datetime(ts).replace(tzinfo=timezone.utc).timestamp()
 
     def ts_to_iso(self, ts: str) -> str:
+        """Convert timestamp string to ISO 8601 format."""
         return self.ts_to_datetime(ts).replace(tzinfo=timezone.utc).isoformat()
 
     def simulate_glucose_stream(

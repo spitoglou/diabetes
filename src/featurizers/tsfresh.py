@@ -1,3 +1,9 @@
+"""Tsfresh-based time series feature extraction.
+
+This module provides the TsfreshFeaturizer class for extracting features
+from glucose time series data using the tsfresh library.
+"""
+
 from __future__ import annotations
 
 from typing import Any

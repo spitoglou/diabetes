@@ -1,3 +1,10 @@
+"""Mean Adjusted Exponent Error (MADEX) metric implementation.
+
+This module provides the MADEX metric for evaluating glucose prediction accuracy,
+which weights errors based on clinical severity, penalizing hypoglycemic errors
+more heavily than hyperglycemic errors.
+"""
+
 from __future__ import annotations
 
 from typing import Any, Sequence

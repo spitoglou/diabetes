@@ -1,3 +1,9 @@
+"""AIDA dataset blood glucose provider.
+
+This module provides the AidaBgcProvider class for loading and streaming
+glucose measurements from the AIDA diabetes dataset (.dat files).
+"""
+
 from __future__ import annotations
 
 from collections.abc import Generator
@@ -25,9 +31,11 @@ class AidaBgcProvider(BgcProviderInterface):
         return df.iloc[start:]
 
     def ts_to_datetime(self, ts: str) -> datetime:
+        """Convert timestamp string to datetime object."""
         return datetime.strptime(ts, "%d-%m-%Y %H:%M:%S")
 
     def ts_to_timestamp(self, ts: str) -> float:
+        """Convert timestamp string to Unix timestamp."""
         return self.ts_to_datetime(ts).replace(tzinfo=timezone.utc).timestamp()
 
     def simulate_glucose_stream(

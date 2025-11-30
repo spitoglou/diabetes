@@ -1,3 +1,9 @@
+"""DataFrame utility functions.
+
+This module provides helper functions for DataFrame operations including
+saving/loading pickle files and sanitizing column names for ML compatibility.
+"""
+
 from __future__ import annotations
 
 import re

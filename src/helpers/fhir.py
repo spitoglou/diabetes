@@ -1,3 +1,9 @@
+"""FHIR data format utilities.
+
+This module provides functions for creating FHIR-compliant JSON representations
+of glucose readings for interoperability with healthcare systems.
+"""
+
 from __future__ import annotations
 
 import json
