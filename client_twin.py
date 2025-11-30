@@ -116,13 +116,6 @@ def stream_data_twin(send_to_service: bool = True):
 
     try:
         for values in stream:
-            # Get original timestamp from the raw data
-            idx = start_index + (
-                list(provider.simulate_glucose_stream(shift=start_index)).index(values)
-                if False
-                else 0
-            )
-
             # Replace with current date
             original_ts = glucose_levels[start_index].attrib["ts"]
             values["time"] = create_twin_timestamp(original_ts, now)
@@ -155,6 +148,8 @@ def stream_data_twin(send_to_service: bool = True):
 
 def main():
     """CLI entry point for the digital twin client."""
+    config = get_config()
+    setup_logging(level=config.log_level)
     stream_data_twin(send_to_service=True)
 
 

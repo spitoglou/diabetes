@@ -1,0 +1,19 @@
+# Archived/deprecated code
+archive/
+
+# Build artifacts and caches
+__pycache__/
+.pytest_cache/
+catboost_info/
+.ipynb_checkpoints/
+
+# Generated/binary files
+models/*.pkl
+*.log
+
+# Data files (large, not useful for code context)
+excel_dataframes/*.xlsx
+old_dataframes/
+
+# External service caches
+.neptune/
