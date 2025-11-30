@@ -41,7 +41,7 @@ class AidaBgcProvider(BgcProviderInterface):
     def simulate_glucose_stream(
         self, shift: int = 0
     ) -> Generator[dict[str, Any], None, None]:
-        for index, glucose_event in self.get_glycose_levels().iterrows():
+        for _, glucose_event in self.get_glycose_levels().iterrows():
             logger.info(glucose_event)
             values: dict[str, Any] = {
                 "time": glucose_event["time"],

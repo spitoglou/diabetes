@@ -1,10 +1,13 @@
 [MAIN]
 ignore=archive,.venv
+extension-pkg-allow-list=lxml
 
 [DESIGN]
 max-attributes=20
 max-args=10
-max-locals=20
+max-locals=35
+max-statements=60
+max-bool-expr=10
 
 [FORMAT]
 max-line-length=110
@@ -13,4 +16,8 @@ max-line-length=110
 disable=
     too-few-public-methods,
     too-many-arguments,
-    too-many-positional-arguments
+    too-many-positional-arguments,
+    line-too-long,
+    fixme,
+    chained-comparison,
+    unused-argument

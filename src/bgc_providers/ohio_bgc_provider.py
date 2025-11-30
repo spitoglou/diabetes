@@ -24,8 +24,9 @@ class OhioBgcProvider(BgcProviderInterface):
 
     def __init__(self, ohio_no: str | int, scope: str = "train") -> None:
         self.patient: str | int = ohio_no
-        self.source_file: str = "data/ohio/{0}/{1}-ws-{0}ing.xml".format(scope, ohio_no)
-        self.xml: Any = objectify.parse(open(self.source_file))
+        self.source_file: str = f"data/ohio/{scope}/{ohio_no}-ws-{scope}ing.xml"
+        with open(self.source_file, encoding="utf-8") as f:
+            self.xml: Any = objectify.parse(f)
         self.root: Any = self.xml.getroot()
 
     def get_glycose_levels(self, start: int = 0) -> Any:
@@ -50,7 +51,8 @@ class OhioBgcProvider(BgcProviderInterface):
         self, shift: int = 0, verbose: bool = False
     ) -> Generator[dict[str, Any], None, None]:
         for glucose_event in self.get_glycose_levels(shift):
-            logger.info(glucose_event.attrib) if verbose else ...
+            if verbose:
+                logger.info(glucose_event.attrib)
             values: dict[str, Any] = {
                 "timestamp": self.ts_to_timestamp(glucose_event.attrib["ts"])
             }

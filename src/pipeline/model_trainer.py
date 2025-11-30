@@ -225,4 +225,4 @@ class ModelTrainer:
     @staticmethod
     def _get_model_name(model: Any) -> str:
         """Extract model name from model object."""
-        return str(model).split("(")[0]
+        return str(model).split("(", maxsplit=1)[0]

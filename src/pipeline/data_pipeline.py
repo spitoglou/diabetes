@@ -94,7 +94,7 @@ class DataPipeline:
 
         for point in problematic_points:
             for i in range(-1 * horizon, window):
-                if (point + i) in df.index:
+                if point + i in df.index:
                     df.drop(point + i, inplace=True)
 
         logger.info(f"DataFrame shape after gap removal: {df.shape}")

@@ -1,4 +1,5 @@
 """Experiment orchestrator service coordinating the ML pipeline."""
+# pylint: disable=wrong-import-position
 
 import time
 from dataclasses import dataclass, field
@@ -6,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import matplotlib
 
-matplotlib.use("Agg")
+matplotlib.use("Agg")  # Must be called before importing pyplot
 import matplotlib.pyplot as plt
 import neptune
 from loguru import logger
@@ -156,6 +157,7 @@ class ExperimentOrchestrator:
             # Load and process test data
             logger.info("Processing test data")
             # Create a new provider for test data
+            # pylint: disable-next=import-outside-toplevel
             from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
 
             test_provider = OhioBgcProvider(scope="test", ohio_no=patient_id)

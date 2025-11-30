@@ -49,12 +49,12 @@ def mean_adjusted_exponent_error(
         return 2 - np.tanh(((y_i - a) / b)) * ((y_hat - y_i) / c)
 
     sum_: float = 0
-    for i in range(len(y)):
-        exp = exponent(y_pred[i], y[i])
+    for y_val, y_pred_val in zip(y, y_pred):
+        exp = exponent(y_pred_val, y_val)
         if verbose:
             logger.debug(f"Exponent value: {exp}")
         # Clip base and exponent to avoid overflow
-        base: float = min(abs(y_pred[i] - y[i]), 1e6)
+        base: float = min(abs(y_pred_val - y_val), 1e6)
         exp_clipped: float = min(max(exp, 0), 10)
         sum_ += base**exp_clipped
     return sum_ / len(y)
@@ -128,5 +128,4 @@ def graph_vs_mse(
         plt.savefig(f"{save_folder}/compare_vs_mse({value}+-{value_range}).png")
         plt.clf()
         return None
-    else:
-        return plt
+    return plt

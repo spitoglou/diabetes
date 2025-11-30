@@ -174,36 +174,25 @@ def clarke_error_grid(
 
     # Statistics from the data
     zone: list[int] = [0] * 5
-    for i in range(len(ref_values)):
-        if (ref_values[i] <= 70 and pred_values[i] <= 70) or (
-            pred_values[i] <= 1.2 * ref_values[i]
-            and pred_values[i] >= 0.8 * ref_values[i]
+    for ref_val, pred_val in zip(ref_values, pred_values):
+        if (ref_val <= 70 and pred_val <= 70) or (
+            pred_val <= 1.2 * ref_val and pred_val >= 0.8 * ref_val
         ):
             zone[0] += 1  # Zone A
 
-        elif (ref_values[i] >= 180 and pred_values[i] <= 70) or (
-            ref_values[i] <= 70 and pred_values[i] >= 180
-        ):
+        elif (ref_val >= 180 and pred_val <= 70) or (ref_val <= 70 and pred_val >= 180):
             zone[4] += 1  # Zone E
 
-        elif (
-            (ref_values[i] >= 70 and ref_values[i] <= 290)
-            and pred_values[i] >= ref_values[i] + 110
-        ) or (
-            (ref_values[i] >= 130 and ref_values[i] <= 180)
-            and (pred_values[i] <= (7 / 5) * ref_values[i] - 182)
+        elif ((ref_val >= 70 and ref_val <= 290) and pred_val >= ref_val + 110) or (
+            (ref_val >= 130 and ref_val <= 180)
+            and (pred_val <= (7 / 5) * ref_val - 182)
         ):
             zone[2] += 1  # Zone C
         elif (
-            (ref_values[i] >= 240 and (pred_values[i] >= 70 and pred_values[i] <= 180))
+            (ref_val >= 240 and (pred_val >= 70 and pred_val <= 180))
+            or (ref_val <= 175 / 3 and pred_val <= 180 and pred_val >= 70)
             or (
-                ref_values[i] <= 175 / 3
-                and pred_values[i] <= 180
-                and pred_values[i] >= 70
-            )
-            or (
-                (ref_values[i] >= 175 / 3 and ref_values[i] <= 70)
-                and pred_values[i] >= (6 / 5) * ref_values[i]
+                (ref_val >= 175 / 3 and ref_val <= 70) and pred_val >= (6 / 5) * ref_val
             )
         ):
             zone[3] += 1  # Zone D

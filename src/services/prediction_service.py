@@ -194,6 +194,7 @@ class PredictionService:
 
     def _prepare_measurements(self, raw_measurements: List[Dict]) -> pd.DataFrame:
         """Convert raw measurement dicts to DataFrame."""
+        # pylint: disable-next=import-outside-toplevel
         from src.helpers.misc import get_part_of_day
 
         records = []

@@ -48,7 +48,7 @@ class MongoDB:
         except ConnectionFailure as e:
             logger.error(f"MongoDB connection failed: {e}")
             return False
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.exception(f"Unexpected error pinging MongoDB: {e}")
             return False
 

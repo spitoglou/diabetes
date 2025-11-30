@@ -123,12 +123,12 @@ class Config:
 
 
 # Global config instance - can be overridden for testing
-_config: Config | None = None
+_config: Config | None = None  # pylint: disable=invalid-name
 
 
 def get_config() -> Config:
     """Get the global configuration instance."""
-    global _config
+    global _config  # pylint: disable=global-statement
     if _config is None:
         _config = Config()
     return _config
@@ -136,11 +136,11 @@ def get_config() -> Config:
 
 def set_config(config: Config) -> None:
     """Set a custom configuration (useful for testing)."""
-    global _config
+    global _config  # pylint: disable=global-statement
     _config = config
 
 
 def reset_config() -> None:
     """Reset configuration to reload from environment."""
-    global _config
+    global _config  # pylint: disable=global-statement
     _config = None
