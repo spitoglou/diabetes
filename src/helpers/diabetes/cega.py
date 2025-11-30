@@ -1,4 +1,4 @@
-'''
+"""
 CLARKE ERROR GRID ANALYSIS      ClarkeErrorGrid.py
 
 Need Matplotlib Pyplot
@@ -76,66 +76,90 @@ Based on the Matlab Clarke Error Grid Analysis File Version 1.2 by:
 Edgar Guevara Codina
 codina@REMOVETHIScactus.iico.uaslp.mx
 March 29 2013
-'''
+"""
 
+from __future__ import annotations
+
+from types import ModuleType
+from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
+from loguru import logger
 
 
-# This function takes in the reference values and the prediction values as lists and returns a list with each index
-# corresponding to the total numberof points within that zone (0=A, 1=B, 2=C, 3=D, 4=E) and the plot
-def clarke_error_grid(ref_values, pred_values, title_string):
+def clarke_error_grid(
+    ref_values: Sequence[float], pred_values: Sequence[float], title_string: str
+) -> tuple[ModuleType, list[int]]:
+    """
+    Generate a Clarke Error Grid Analysis plot.
+
+    This function takes in the reference values and the prediction values as lists
+    and returns a list with each index corresponding to the total number of points
+    within that zone (0=A, 1=B, 2=C, 3=D, 4=E) and the plot.
+
+    :param ref_values: List of reference glucose values (mg/dl)
+    :param pred_values: List of predicted glucose values (mg/dl)
+    :param title_string: Title string for the plot
+    :return: Tuple of (matplotlib.pyplot, zone counts list)
+    """
     # sourcery no-metrics
 
     # Checking to see if the lengths of the reference and prediction arrays are the same
-    assert (len(ref_values) == len(pred_values)), "Unequal number of values (reference : {}) (prediction : {}).".format(
-        len(ref_values), len(pred_values))
+    assert len(ref_values) == len(pred_values), (
+        f"Unequal number of values (reference : {len(ref_values)}) (prediction : {len(pred_values)})."
+    )
 
     # Checks to see if the values are within the normal physiological range, otherwise it gives a warning
     if max(ref_values) > 400 or max(pred_values) > 400:
-        print("Input Warning: the maximum reference value {} or the maximum prediction value {} exceeds the normal \
-         physiological range of glucose (<400 mg/dl).".format(max(ref_values), max(pred_values)))
+        logger.warning(
+            f"The maximum reference value {max(ref_values)} or the maximum prediction value "
+            f"{max(pred_values)} exceeds the normal physiological range of glucose (<400 mg/dl)."
+        )
     if min(ref_values) < 0 or min(pred_values) < 0:
-        print("Input Warning: the minimum reference value {} or the minimum prediction value {} is less than 0 mg/dl."
-              .format(min(ref_values), min(pred_values)))
+        logger.warning(
+            f"The minimum reference value {min(ref_values)} or the minimum prediction value "
+            f"{min(pred_values)} is less than 0 mg/dl."
+        )
 
     # Clear plot
     plt.clf()
 
     # Set up plot
-    plt.scatter(ref_values, pred_values, marker='o', color='black', s=8)
-    plt.title(title_string + " Clarke Error Grid")
+    plt.scatter(ref_values, pred_values, marker="o", color="black", s=8)
+    plt.title(f"{title_string} Clarke Error Grid")
     plt.xlabel("Reference Concentration (mg/dl)")
     plt.ylabel("Prediction Concentration (mg/dl)")
     plt.xticks([0, 50, 100, 150, 200, 250, 300, 350, 400])
     plt.yticks([0, 50, 100, 150, 200, 250, 300, 350, 400])
-    plt.gca().set_facecolor('white')
+    ax: Any = plt.gca()
+    ax.set_facecolor("white")
 
     # Set axes lengths
-    plt.gca().set_xlim([0, 400])
-    plt.gca().set_ylim([0, 400])
-    plt.gca().set_aspect((400) / (400))
+    ax.set_xlim([0, 400])
+    ax.set_ylim([0, 400])
+    ax.set_aspect(1)
+    # ? plt.gca().set_aspect((400) / (400))
 
     # Plot zone lines
     # Theoretical 45 regression line
-    plt.plot([0, 400], [0, 400], ':', c='black')
-    plt.plot([0, 175 / 3], [70, 70], '-', c='black')
+    plt.plot([0, 400], [0, 400], ":", c="black")
+    plt.plot([0, 175 / 3], [70, 70], "-", c="black")
     # plt.plot([175/3, 320], [70, 400], '-', c='black')
     # Replace 320 with 400/1.2 because 100*(400 - 400/1.2)/(400/1.2) =  20% error
-    plt.plot([175 / 3, 400 / 1.2], [70, 400], '-', c='black')
-    plt.plot([70, 70], [84, 400], '-', c='black')
-    plt.plot([0, 70], [180, 180], '-', c='black')
-    plt.plot([70, 290], [180, 400], '-', c='black')
+    plt.plot([175 / 3, 400 / 1.2], [70, 400], "-", c="black")
+    plt.plot([70, 70], [84, 400], "-", c="black")
+    plt.plot([0, 70], [180, 180], "-", c="black")
+    plt.plot([70, 290], [180, 400], "-", c="black")
     # plt.plot([70, 70], [0, 175/3], '-', c='black')
     # Replace 175.3 with 56 because 100*abs(56-70)/70) = 20% error
-    plt.plot([70, 70], [0, 56], '-', c='black')
+    plt.plot([70, 70], [0, 56], "-", c="black")
     # plt.plot([70, 400],[175/3, 320],'-', c='black')
-    plt.plot([70, 400], [56, 320], '-', c='black')
-    plt.plot([180, 180], [0, 70], '-', c='black')
-    plt.plot([180, 400], [70, 70], '-', c='black')
-    plt.plot([240, 240], [70, 180], '-', c='black')
-    plt.plot([240, 400], [180, 180], '-', c='black')
-    plt.plot([130, 180], [0, 70], '-', c='black')
+    plt.plot([70, 400], [56, 320], "-", c="black")
+    plt.plot([180, 180], [0, 70], "-", c="black")
+    plt.plot([180, 400], [70, 70], "-", c="black")
+    plt.plot([240, 240], [70, 180], "-", c="black")
+    plt.plot([240, 400], [180, 180], "-", c="black")
+    plt.plot([130, 180], [0, 70], "-", c="black")
 
     # Add zone titles
     plt.text(30, 15, "A", fontsize=15)
@@ -149,24 +173,39 @@ def clarke_error_grid(ref_values, pred_values, title_string):
     plt.text(370, 15, "E", fontsize=15)
 
     # Statistics from the data
-    zone = [0] * 5
+    zone: list[int] = [0] * 5
     for i in range(len(ref_values)):
-        if (ref_values[i] <= 70 and pred_values[i] <= 70) \
-                or (pred_values[i] <= 1.2 * ref_values[i] and pred_values[i] >= 0.8 * ref_values[i]):
+        if (ref_values[i] <= 70 and pred_values[i] <= 70) or (
+            pred_values[i] <= 1.2 * ref_values[i]
+            and pred_values[i] >= 0.8 * ref_values[i]
+        ):
             zone[0] += 1  # Zone A
 
-        elif (ref_values[i] >= 180 and pred_values[i] <= 70) or (ref_values[i] <= 70 and pred_values[i] >= 180):
+        elif (ref_values[i] >= 180 and pred_values[i] <= 70) or (
+            ref_values[i] <= 70 and pred_values[i] >= 180
+        ):
             zone[4] += 1  # Zone E
 
-        elif ((ref_values[i] >= 70 and ref_values[i] <= 290) and pred_values[i] >= ref_values[i] + 110) \
-                or (
-                    (ref_values[i] >= 130 and ref_values[i] <= 180) and (
-                        pred_values[i] <= (7 / 5) * ref_values[i] - 182)
+        elif (
+            (ref_values[i] >= 70 and ref_values[i] <= 290)
+            and pred_values[i] >= ref_values[i] + 110
+        ) or (
+            (ref_values[i] >= 130 and ref_values[i] <= 180)
+            and (pred_values[i] <= (7 / 5) * ref_values[i] - 182)
         ):
             zone[2] += 1  # Zone C
-        elif (ref_values[i] >= 240 and (pred_values[i] >= 70 and pred_values[i] <= 180)) \
-                or (ref_values[i] <= 175 / 3 and pred_values[i] <= 180 and pred_values[i] >= 70) \
-                or ((ref_values[i] >= 175 / 3 and ref_values[i] <= 70) and pred_values[i] >= (6 / 5) * ref_values[i]):
+        elif (
+            (ref_values[i] >= 240 and (pred_values[i] >= 70 and pred_values[i] <= 180))
+            or (
+                ref_values[i] <= 175 / 3
+                and pred_values[i] <= 180
+                and pred_values[i] >= 70
+            )
+            or (
+                (ref_values[i] >= 175 / 3 and ref_values[i] <= 70)
+                and pred_values[i] >= (6 / 5) * ref_values[i]
+            )
+        ):
             zone[3] += 1  # Zone D
         else:
             zone[1] += 1  # Zone B

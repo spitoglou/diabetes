@@ -1,0 +1,214 @@
+{
+    "metadata": {
+        "streamsync_version": "0.2.8"
+    },
+    "components": {
+        "root": {
+            "id": "root",
+            "type": "root",
+            "content": {
+                "appName": "My App"
+            },
+            "parentId": null,
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "c0f99a9e-5004-4e75-a6c6-36f17490b134": {
+            "id": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
+            "type": "page",
+            "content": {
+                "pageMode": "compact",
+                "emptinessColor": "#e9eef1"
+            },
+            "parentId": "root",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "bebc5fe9-63a7-46a7-b0fa-62303555cfaf": {
+            "id": "bebc5fe9-63a7-46a7-b0fa-62303555cfaf",
+            "type": "header",
+            "content": {
+                "text": "@{my_app.title}"
+            },
+            "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "kg1tqh8t2tb4s33u": {
+            "id": "kg1tqh8t2tb4s33u",
+            "type": "section",
+            "content": {
+                "title": "",
+                "snapMode": "no"
+            },
+            "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
+            "position": 1,
+            "handlers": {},
+            "visible": true
+        },
+        "p213phzfvj1rp5ee": {
+            "id": "p213phzfvj1rp5ee",
+            "type": "metric",
+            "content": {
+                "note": "@{last_measurement_note}",
+                "name": "\u03a4\u03b5\u03bb\u03b5\u03c5\u03c4\u03b1\u03af\u03b1 \u039c\u03ad\u03c4\u03c1\u03b7\u03c3\u03b7",
+                "metricValue": "@{last_measurement}",
+                "description": "@{last_measurement_time}"
+            },
+            "parentId": "jdp5qohzkmnfesse",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "surmxeeeyo34eb6k": {
+            "id": "surmxeeeyo34eb6k",
+            "type": "columns",
+            "content": {},
+            "parentId": "kg1tqh8t2tb4s33u",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "o1zrvvhhekhxak3p": {
+            "id": "o1zrvvhhekhxak3p",
+            "type": "column",
+            "content": {
+                "width": "1"
+            },
+            "parentId": "surmxeeeyo34eb6k",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "yq7k8v1xtr4k43cf": {
+            "id": "yq7k8v1xtr4k43cf",
+            "type": "columns",
+            "content": {},
+            "parentId": "o1zrvvhhekhxak3p",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "jdp5qohzkmnfesse": {
+            "id": "jdp5qohzkmnfesse",
+            "type": "column",
+            "content": {
+                "width": "1"
+            },
+            "parentId": "yq7k8v1xtr4k43cf",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "pmsex11my4fhzmuo": {
+            "id": "pmsex11my4fhzmuo",
+            "type": "column",
+            "content": {
+                "width": "1"
+            },
+            "parentId": "yq7k8v1xtr4k43cf",
+            "position": 1,
+            "handlers": {},
+            "visible": true
+        },
+        "31b6nsnihasy3c56": {
+            "id": "31b6nsnihasy3c56",
+            "type": "metric",
+            "content": {
+                "name": "\u03a4\u03b5\u03bb\u03b5\u03c5\u03c4\u03b1\u03af\u03b1 \u03a0\u03c1\u03cc\u03b2\u03bb\u03b5\u03c8\u03b7",
+                "note": "@{last_prediction_note}",
+                "metricValue": "@{last_prediction}",
+                "description": "@{last_prediction_time}"
+            },
+            "parentId": "pmsex11my4fhzmuo",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "iep6l2y3j8cuv3cm": {
+            "id": "iep6l2y3j8cuv3cm",
+            "type": "section",
+            "content": {
+                "title": "\u039c\u03b5\u03c4\u03c1\u03ae\u03c3\u03b5\u03b9\u03c2",
+                "snapMode": "no"
+            },
+            "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
+            "position": 3,
+            "handlers": {},
+            "visible": true
+        },
+        "jhgofkf4cdl5c2js": {
+            "id": "jhgofkf4cdl5c2js",
+            "type": "dataframe",
+            "content": {
+                "dataframe": "@{data.measurements}"
+            },
+            "parentId": "iep6l2y3j8cuv3cm",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "ia1pc5d2uuba6ilt": {
+            "id": "ia1pc5d2uuba6ilt",
+            "type": "timer",
+            "content": {
+                "intervalMs": "10000"
+            },
+            "parentId": "bebc5fe9-63a7-46a7-b0fa-62303555cfaf",
+            "position": 0,
+            "handlers": {
+                "ss-tick": "refresh"
+            },
+            "visible": true
+        },
+        "8o3dr0i6kdlk3r68": {
+            "id": "8o3dr0i6kdlk3r68",
+            "type": "section",
+            "content": {
+                "title": "\u03a0\u03c1\u03bf\u03b2\u03bb\u03ad\u03c8\u03b5\u03b9\u03c2",
+                "snapMode": "no"
+            },
+            "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
+            "position": 4,
+            "handlers": {},
+            "visible": true
+        },
+        "yxjsuygzquls6moo": {
+            "id": "yxjsuygzquls6moo",
+            "type": "dataframe",
+            "content": {
+                "dataframe": "@{data.predictions}"
+            },
+            "parentId": "8o3dr0i6kdlk3r68",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        },
+        "wuxwgyipnfvuglhp": {
+            "id": "wuxwgyipnfvuglhp",
+            "type": "section",
+            "content": {
+                "title": "",
+                "snapMode": "no"
+            },
+            "parentId": "c0f99a9e-5004-4e75-a6c6-36f17490b134",
+            "position": 2,
+            "handlers": {},
+            "visible": true
+        },
+        "nqk61wlddh2tg5nb": {
+            "id": "nqk61wlddh2tg5nb",
+            "type": "plotlygraph",
+            "content": {
+                "spec": "@{graph}"
+            },
+            "parentId": "wuxwgyipnfvuglhp",
+            "position": 0,
+            "handlers": {},
+            "visible": true
+        }
+    }
+}

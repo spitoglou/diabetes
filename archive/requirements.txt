@@ -1,0 +1,12 @@
+ipykernel>=6.25.1
+ipython>=7.34.0
+loguru>=0.7.0
+python-dotenv>=1.0.0
+lxml>=4.9.3
+neptune>=1.6.0
+openpyxl>=3.1.2
+pycaret[full]>=3.0.4
+pymongo>=4.4.1
+tsfresh>=0.20.1
+typer>=0.9.0
+streamsync>=0.2.8

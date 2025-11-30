@@ -1,5 +1,5 @@
+.env
 .vscode/
-data/
 __pycache__
 logs.log
 src/bgc_providers/ohio_bgc_provider.py
@@ -9,3 +9,9 @@ catboost_info/
 *.log
 .neptune/
 old_dataframes/
+excel_dataframes/*.xlsx
+config/mongo_config.py
+mobile/config/mongo_config.py
+config/server_config.py
+config/simulation_config.py
+models/*.pkl

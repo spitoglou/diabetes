@@ -1,0 +1,3 @@
+OHIO_ID = '559'
+
+INTERVAL = 20
