@@ -339,6 +339,16 @@ For deployment scenarios, the system supports real-time prediction via MongoDB c
 4. **Model inference**: Pre-trained model generates glucose prediction
 5. **Result storage**: Predicted value and metadata stored for visualization
 
+### 4.3 Digital Twin Simulation
+
+To enable realistic testing and demonstration of the prediction system, we implement a time-synchronized "digital twin" client. Unlike sequential replay of historical data, the digital twin:
+
+1. **Time alignment**: Identifies the dataset entry closest to the current time of day (hour:minute)
+2. **Date substitution**: Replaces historical dates with the current date while preserving the original time component
+3. **Circadian relevance**: Simulates glucose patterns appropriate for the current time of day, reflecting the significant role of circadian rhythms in glucose regulation
+
+This approach provides more realistic simulation for system validation, as glucose dynamics vary substantially by time of day (e.g., dawn phenomenon, post-meal patterns, nocturnal profiles). The digital twin allows real-time demonstration of prediction performance under conditions that match actual deployment scenarios.
+
 ---
 
 ## 5. Results

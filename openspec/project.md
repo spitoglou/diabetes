@@ -46,6 +46,16 @@ Diabetes blood glucose (BG) prediction system developed for a PhD thesis by Stav
 - Update README when: adding/removing entry points, changing installation steps, modifying project structure, or updating dependencies
 - README should reflect the current state of the project for new developers
 
+### Scientific Paper
+- The draft scientific paper is located at `paper/draft.md`
+- After implementing significant changes, review the paper and update relevant sections if the change affects:
+  - System architecture (Section 4)
+  - ML pipeline or methodology (Section 3)
+  - Evaluation metrics or results (Sections 5-6)
+  - Real-time prediction or streaming capabilities (Section 4.2-4.3)
+- Skip paper updates for purely operational changes (CLI improvements, logging, configuration) unless they introduce new concepts worth documenting
+- The paper documents the scientific contribution; implementation details belong in README or code comments
+
 ### Code Style
 - Standard Python conventions (PEP 8)
 - Type hints required in all files (function signatures, class attributes, and variables where type is not obvious)

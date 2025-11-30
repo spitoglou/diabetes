@@ -62,6 +62,7 @@ After deployment, create separate PR to:
 - Update `specs/` if capabilities changed
 - Use `openspec archive <change-id> --skip-specs --yes` for tooling-only changes (always pass the change ID explicitly)
 - Run `openspec validate --strict` to confirm the archived change passes checks
+- Review and update `paper/draft.md` if the change affects documented system architecture, methodology, or capabilities (see project.md for guidance)
 
 ## Before Any Task
 
