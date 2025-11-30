@@ -44,6 +44,9 @@ uv run diabetes-server
 # Start the glucose streaming client
 uv run diabetes-client
 
+# Start the digital twin client (time-synchronized)
+uv run diabetes-client-twin
+
 # Start the prediction service
 uv run diabetes-predict
 
