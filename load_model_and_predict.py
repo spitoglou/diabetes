@@ -54,7 +54,7 @@ def handle_new_data(service, patient_id, config):
         logger.success(f"Prediction stored with ID: {record_id}")
     except ValueError as e:
         logger.warning(f"Insufficient data for prediction: {e}")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.exception(f"Prediction failed: {e}")
 
 
@@ -78,7 +78,7 @@ def run_watcher():
 
     try:
         with measurement_repo.watch(patient_id, pipeline) as stream:
-            for change in stream:
+            for _ in stream:
                 logger.debug("Detected new measurement")
                 handle_new_data(service, patient_id, config)
                 resume_token = stream.resume_token
@@ -87,12 +87,11 @@ def run_watcher():
         if resume_token is None:
             logger.error(f"Change stream initialization failed: {e}")
             raise
-        else:
-            # Resume from last known position
-            logger.warning(f"Change stream interrupted, resuming: {e}")
-            with measurement_repo.watch(patient_id, pipeline) as stream:
-                for change in stream:
-                    handle_new_data(service, patient_id, config)
+        # Resume from last known position
+        logger.warning(f"Change stream interrupted, resuming: {e}")
+        with measurement_repo.watch(patient_id, pipeline) as stream:
+            for _ in stream:
+                handle_new_data(service, patient_id, config)
 
 
 def main():

@@ -22,4 +22,4 @@ jobs:
           uv pip install pylint
       - name: Analysing the code with pylint
         run: |
-          uv run pylint src
+          uv run pylint src *.py

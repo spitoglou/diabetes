@@ -61,7 +61,7 @@ def watch_database():
         logger.error(f"MongoDB error: {e}")
     except KeyboardInterrupt:
         logger.info("Monitor stopped by user")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.exception(f"Unexpected error: {e}")
 
 

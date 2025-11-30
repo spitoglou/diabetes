@@ -16,12 +16,12 @@ from src.config import get_config
 from src.logging_config import setup_logging
 from src.services.experiment_orchestrator import ExperimentOrchestrator
 
-# Experiment parameters
-PATIENTS = [559, 563, 570, 575, 588, 591]
-WINDOWS = [6, 12]  # Window sizes in 5-min intervals
-HORIZONS = [1, 6, 12]  # Prediction horizons in 5-min intervals
+# Experiment parameters (full run)
+# PATIENTS = [559, 563, 570, 575, 588, 591]
+# WINDOWS = [6, 12]  # Window sizes in 5-min intervals
+# HORIZONS = [1, 6, 12]  # Prediction horizons in 5-min intervals
 
-# Override for quick testing (comment out for full run)
+# Quick testing configuration (comment out and uncomment above for full run)
 PATIENTS = [563]
 WINDOWS = [12]
 HORIZONS = [6]
@@ -62,7 +62,7 @@ def run_experiments():
             results.append(result)
             logger.success(f"Experiment completed in {result.execution_time:.1f}s")
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.exception(f"Experiment failed: {e}")
 
     # Summary

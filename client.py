@@ -35,8 +35,8 @@ def stream_data(send_to_service: bool = True):
     Args:
         send_to_service: Whether to actually POST to the service.
     """
-    config = get_config()
-    patient_id = config.default_patient_id
+    cfg = get_config()
+    patient_id = cfg.default_patient_id
 
     logger.info(f"Starting glucose stream for patient {patient_id}")
 
@@ -47,7 +47,7 @@ def stream_data(send_to_service: bool = True):
             values = next(stream)
 
             if send_to_service:
-                send_reading(values, config)
+                send_reading(values, cfg)
                 logger.success(values)
             sleep(INTERVAL)
     except KeyboardInterrupt:

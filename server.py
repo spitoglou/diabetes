@@ -70,18 +70,18 @@ def get_config_dep() -> Config:
     return get_config()
 
 
-def get_mongo(config: Config = Depends(get_config_dep)) -> MongoDB:
+def get_mongo(cfg: Config = Depends(get_config_dep)) -> MongoDB:
     """Dependency for MongoDB connection."""
-    return MongoDB(config)
+    return MongoDB(cfg)
 
 
 def get_measurement_repo(
     mongo: MongoDB = Depends(get_mongo),
-    config: Config = Depends(get_config_dep),
+    cfg: Config = Depends(get_config_dep),
 ) -> MeasurementRepository:
     """Dependency for measurement repository."""
     db = mongo.get_database()
-    return MeasurementRepository(db, config)
+    return MeasurementRepository(db, cfg)
 
 
 # FastAPI app
@@ -96,13 +96,13 @@ app = FastAPI(
 async def startup_event():
     """Verify database connection on startup."""
     try:
-        config = get_config()
-        mongo = MongoDB(config)
+        cfg = get_config()
+        mongo = MongoDB(cfg)
         if mongo.ping():
             logger.info("Server started, MongoDB connection verified")
         else:
             logger.warning("Server started but MongoDB ping failed")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"Failed to connect to MongoDB on startup: {e}")
 
 
@@ -113,12 +113,12 @@ async def root():
 
 
 @app.get("/health")
-async def health_check(config: Config = Depends(get_config_dep)):
+async def health_check(cfg: Config = Depends(get_config_dep)):
     """Detailed health check endpoint."""
     try:
-        mongo = MongoDB(config)
+        mongo = MongoDB(cfg)
         db_healthy = mongo.ping()
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         db_healthy = False
 
     return {
@@ -138,7 +138,7 @@ async def health_check(config: Config = Depends(get_config_dep)):
 async def post_reading(
     json_payload: FhirObservation,
     repo: MeasurementRepository = Depends(get_measurement_repo),
-    config: Config = Depends(get_config_dep),
+    cfg: Config = Depends(get_config_dep),
 ):
     """
     Receive a CGM glucose measurement in FHIR format.
@@ -152,7 +152,7 @@ async def post_reading(
     payload_dict = json_payload.model_dump()
     patient_id = payload_dict["subject"]["identifier"]
 
-    if config.debug:
+    if cfg.debug:
         logger.debug(f"Received measurement for patient {patient_id}")
         logger.debug(f"Payload: {payload_dict}")
 
@@ -165,10 +165,10 @@ async def post_reading(
         )
     except ValueError as e:
         logger.warning(f"Invalid patient ID: {patient_id}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.exception(f"Failed to save measurement: {e}")
-        raise HTTPException(status_code=500, detail="Database error")
+        raise HTTPException(status_code=500, detail="Database error") from e
 
 
 def main():
