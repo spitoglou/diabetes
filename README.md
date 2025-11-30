@@ -1,6 +1,7 @@
 # Diabetes Blood Glucose Prediction
 
 [![CodeQL Advanced](https://github.com/spitoglou/diabetes/actions/workflows/codeql.yml/badge.svg)](https://github.com/spitoglou/diabetes/actions/workflows/codeql.yml)
+[![Pylint](https://github.com/spitoglou/diabetes/actions/workflows/pylint.yml/badge.svg)](https://github.com/spitoglou/diabetes/actions/workflows/pylint.yml)
 
 A machine learning system for predicting continuous glucose monitoring (CGM) readings, developed for a PhD thesis by Stavros Pitoglou.
 
