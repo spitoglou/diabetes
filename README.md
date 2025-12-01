@@ -3,7 +3,6 @@
 [![CodeQL Advanced](https://github.com/spitoglou/diabetes/actions/workflows/codeql.yml/badge.svg)](https://github.com/spitoglou/diabetes/actions/workflows/codeql.yml)
 [![Pylint](https://github.com/spitoglou/diabetes/actions/workflows/pylint.yml/badge.svg)](https://github.com/spitoglou/diabetes/actions/workflows/pylint.yml)
 [![Tests](https://github.com/spitoglou/diabetes/actions/workflows/test.yml/badge.svg)](https://github.com/spitoglou/diabetes/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/spitoglou/diabetes/graph/badge.svg)](https://codecov.io/gh/spitoglou/diabetes)
 
 A machine learning system for predicting continuous glucose monitoring (CGM) readings, developed for a PhD thesis by Stavros Pitoglou.
 

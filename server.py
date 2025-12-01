@@ -86,7 +86,7 @@ def get_measurement_repo(
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup
     try:
