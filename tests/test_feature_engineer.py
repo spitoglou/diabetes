@@ -175,7 +175,7 @@ class TestFeatureEngineerCreateFeaturesCached:
                     {"feature_1": [1], "label": [100]}
                 )
                 with patch("src.pipeline.feature_engineer.save_df"):
-                    result = engineer.create_features_cached(
+                    engineer.create_features_cached(
                         timeseries_df=sample_timeseries_df,
                         patient_id=559,
                         scope="train",

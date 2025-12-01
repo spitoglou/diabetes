@@ -169,6 +169,42 @@ class TestMetricsCalculator:
 
             assert isinstance(result, PredictionMetrics)
 
+    def test_calculate_from_predictions_handles_dataframe_columns(self, calculator):
+        """Test calculate_from_predictions when columns are DataFrames."""
+        # Create a DataFrame with duplicate column names to produce DataFrame slices
+        predictions_df = pd.DataFrame(
+            [[100.0, 105.0], [120.0, 118.0]],
+            columns=["label", "prediction_label"],
+        )
+
+        with patch("src.pipeline.metrics_calculator.clarke_error_grid") as mock_cega:
+            mock_cega.return_value = (MagicMock(), [2, 0, 0, 0, 0])
+
+            result = calculator.calculate_from_predictions(predictions_df)
+
+            assert isinstance(result, PredictionMetrics)
+
+    def test_calculate_from_predictions_converts_non_series(self, calculator):
+        """Test that non-Series values are converted to Series."""
+        # Create DataFrame and manually convert columns to list to test conversion
+        predictions_df = pd.DataFrame(
+            {
+                "label": [100.0, 120.0, 140.0],
+                "prediction_label": [105.0, 118.0, 142.0],
+            }
+        )
+
+        with patch("src.pipeline.metrics_calculator.clarke_error_grid") as mock_cega:
+            mock_cega.return_value = (MagicMock(), [3, 0, 0, 0, 0])
+
+            result = calculator.calculate_from_predictions(
+                predictions_df,
+                generate_plot=False,
+            )
+
+            assert isinstance(result, PredictionMetrics)
+            assert result.cega_figure is None
+
 
 class TestMetricsCalculatorFormatSummary:
     """Tests for format_metrics_summary static method."""

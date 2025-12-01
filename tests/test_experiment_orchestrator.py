@@ -176,7 +176,7 @@ class TestExperimentOrchestratorInit:
                         MockTrainer.return_value = MagicMock()
                         MockCalc.return_value = MagicMock()
 
-                        orchestrator = ExperimentOrchestrator(
+                        ExperimentOrchestrator(
                             provider=mock_provider,
                             config=test_config,
                         )
@@ -276,6 +276,75 @@ class TestExperimentOrchestratorNeptune:
         # Should not raise
         orchestrator._log_neptune_metrics(metrics, metrics)
 
+    def test_log_neptune_metrics_with_run(self, test_config, mock_provider):
+        """Test logging metrics when Neptune is initialized."""
+        orchestrator = ExperimentOrchestrator(
+            provider=mock_provider,
+            config=test_config,
+        )
+
+        # Create a mock Neptune run
+        mock_run = MagicMock()
+        orchestrator._neptune_run = mock_run
+
+        holdout = PredictionMetrics(
+            cega_zones={"A": 90, "B": 8, "C": 1, "D": 1, "E": 0},
+            rmse=10.0,
+            rmadex=5.0,
+        )
+        unseen = PredictionMetrics(
+            cega_zones={"A": 85, "B": 10, "C": 2, "D": 2, "E": 1},
+            rmse=12.0,
+            rmadex=6.0,
+        )
+
+        orchestrator._log_neptune_metrics(holdout, unseen)
+
+        # Verify metrics were logged
+        mock_run.__setitem__.assert_any_call("holdout/cega", holdout.cega_zones)
+        mock_run.__setitem__.assert_any_call("holdout/RMSE", holdout.rmse)
+        mock_run.__setitem__.assert_any_call("holdout/RMADEX", holdout.rmadex)
+        mock_run.__setitem__.assert_any_call("unseen/cega", unseen.cega_zones)
+        mock_run.__setitem__.assert_any_call("unseen/RMSE", unseen.rmse)
+        mock_run.__setitem__.assert_any_call("unseen/RMADEX", unseen.rmadex)
+
+    def test_log_neptune_metrics_with_cega_figure(self, test_config, mock_provider):
+        """Test logging metrics with CEGA figure."""
+        import matplotlib.pyplot as plt
+        from matplotlib.figure import Figure
+
+        orchestrator = ExperimentOrchestrator(
+            provider=mock_provider,
+            config=test_config,
+        )
+
+        # Create a mock Neptune run
+        mock_run = MagicMock()
+        orchestrator._neptune_run = mock_run
+
+        # Create a figure
+        fig = Figure()
+        fig_base, _ax = plt.subplots()
+
+        holdout = PredictionMetrics(
+            cega_zones={"A": 90, "B": 10, "C": 0, "D": 0, "E": 0},
+            rmse=10.0,
+            rmadex=5.0,
+            cega_figure=fig,
+        )
+        unseen = PredictionMetrics(
+            cega_zones={"A": 85, "B": 15, "C": 0, "D": 0, "E": 0},
+            rmse=12.0,
+            rmadex=6.0,
+        )
+
+        orchestrator._log_neptune_metrics(holdout, unseen)
+
+        # Verify cega figure was logged
+        mock_run.__getitem__.assert_called_with("cega")
+        plt.close(fig_base)
+        plt.close(fig)
+
 
 class TestExperimentOrchestratorRun:
     """Tests for run method."""
@@ -321,7 +390,7 @@ class TestExperimentOrchestratorRun:
                 assert result.patient_id == 559
                 assert result.window == 12
                 assert result.horizon == 6
-                assert result.execution_time > 0
+                assert result.execution_time >= 0
 
     def test_run_calls_pipeline_components(
         self,

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from server import app
+from server import app, main, startup_event
 
 
 @pytest.fixture
@@ -211,3 +211,65 @@ class TestErrorResponses:
             assert "Database error" in response.json()["detail"]
         finally:
             app.dependency_overrides.clear()
+
+
+class TestStartupEvent:
+    """Tests for server startup event."""
+
+    def test_startup_event_success(self):
+        """Test startup event with successful MongoDB connection."""
+        import asyncio
+
+        with patch("server.get_config") as mock_get_config:
+            with patch("server.MongoDB") as MockMongo:
+                mock_config = MagicMock()
+                mock_get_config.return_value = mock_config
+                mock_mongo = MagicMock()
+                mock_mongo.ping.return_value = True
+                MockMongo.return_value = mock_mongo
+
+                asyncio.get_event_loop().run_until_complete(startup_event())
+
+                MockMongo.assert_called_once_with(mock_config)
+                mock_mongo.ping.assert_called_once()
+
+    def test_startup_event_ping_fails(self):
+        """Test startup event when MongoDB ping fails."""
+        import asyncio
+
+        with patch("server.get_config") as mock_get_config:
+            with patch("server.MongoDB") as MockMongo:
+                mock_config = MagicMock()
+                mock_get_config.return_value = mock_config
+                mock_mongo = MagicMock()
+                mock_mongo.ping.return_value = False
+                MockMongo.return_value = mock_mongo
+
+                # Should not raise, just log warning
+                asyncio.get_event_loop().run_until_complete(startup_event())
+
+                mock_mongo.ping.assert_called_once()
+
+    def test_startup_event_connection_error(self):
+        """Test startup event when MongoDB connection fails."""
+        import asyncio
+
+        with patch("server.get_config") as mock_get_config:
+            with patch("server.MongoDB") as MockMongo:
+                mock_config = MagicMock()
+                mock_get_config.return_value = mock_config
+                MockMongo.side_effect = Exception("Connection failed")
+
+                # Should not raise, just log error
+                asyncio.get_event_loop().run_until_complete(startup_event())
+
+
+class TestMainFunction:
+    """Tests for main entry point."""
+
+    def test_main_calls_uvicorn(self):
+        """Test main function calls uvicorn.run."""
+        with patch("server.uvicorn.run") as mock_run:
+            main()
+
+            mock_run.assert_called_once_with(app, host="0.0.0.0", port=8000)

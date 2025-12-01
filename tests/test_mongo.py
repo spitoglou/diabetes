@@ -40,7 +40,7 @@ class TestMongoDB:
                 mongo_uri="mongodb://localhost:27017",
                 database_name="test_db",
             )
-            mongo = MongoDB()
+            MongoDB()
 
             mock_get_config.assert_called_once()
 

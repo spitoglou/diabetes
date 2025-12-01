@@ -88,7 +88,7 @@ class TestModelTrainerSetupRegressor:
             with patch("src.pipeline.model_trainer.add_metric"):
                 mock_setup.return_value = MagicMock()
 
-                result = trainer.setup_regressor(sample_train_df)
+                trainer.setup_regressor(sample_train_df)
 
                 mock_setup.assert_called_once()
                 assert trainer._regressor is not None
@@ -133,7 +133,7 @@ class TestModelTrainerCompareAndSelect:
         with pytest.raises(RuntimeError, match="Must call setup_regressor"):
             trainer.compare_and_select()
 
-    def test_compare_and_select(self, test_config, sample_train_df):
+    def test_compare_and_select(self, test_config):
         """Test model comparison and selection."""
         trainer = ModelTrainer(test_config)
         trainer._regressor = MagicMock()
@@ -226,7 +226,7 @@ class TestModelTrainerSaveModels:
         """Test saving models."""
         trainer = ModelTrainer(test_config)
         mock_model = MagicMock()
-        mock_model.__str__ = lambda x: "LinearRegression()"
+        mock_model.__str__ = MagicMock(return_value="LinearRegression()")
         trainer._best_models = [mock_model]
 
         with patch("src.pipeline.model_trainer.save_model") as mock_save:
@@ -243,9 +243,9 @@ class TestModelTrainerSaveModels:
         """Test saving multiple models."""
         trainer = ModelTrainer(test_config)
         mock_model1 = MagicMock()
-        mock_model1.__str__ = lambda x: "Model1()"
+        mock_model1.__str__ = MagicMock(return_value="Model1()")
         mock_model2 = MagicMock()
-        mock_model2.__str__ = lambda x: "Model2()"
+        mock_model2.__str__ = MagicMock(return_value="Model2()")
         trainer._best_models = [mock_model1, mock_model2]
 
         with patch("src.pipeline.model_trainer.save_model"):
@@ -273,6 +273,7 @@ class TestModelTrainerProperties:
         df = pd.DataFrame({"Model": ["a", "b"]})
         trainer._comparison_df = df
 
+        assert trainer.comparison_df is not None
         assert trainer.comparison_df.equals(df)
 
     def test_get_model_name(self):

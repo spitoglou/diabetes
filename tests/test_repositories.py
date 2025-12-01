@@ -100,6 +100,26 @@ class TestMeasurementRepository:
         assert count == 42
         mock_collection.count_documents.assert_called_once_with({})
 
+    def test_delete_all(self, mock_db, config):
+        """Test deleting all measurements for a patient."""
+        mock_collection = MagicMock()
+        mock_result = MagicMock()
+        mock_result.deleted_count = 15
+        mock_collection.delete_many.return_value = mock_result
+        mock_db.__getitem__.return_value = mock_collection
+
+        repo = MeasurementRepository(mock_db, config)
+        deleted = repo.delete_all("559")
+
+        assert deleted == 15
+        mock_collection.delete_many.assert_called_once_with({})
+
+    def test_delete_all_invalid_patient(self, mock_db, config):
+        """Test delete_all with invalid patient raises error."""
+        repo = MeasurementRepository(mock_db, config)
+        with pytest.raises(ValueError, match="Invalid patient ID"):
+            repo.delete_all("999")
+
 
 class TestPredictionRepository:
     """Tests for PredictionRepository."""
@@ -145,3 +165,106 @@ class TestPredictionRepository:
 
         assert len(results) == 1
         mock_cursor.sort.return_value.limit.assert_called_with(5)
+
+    def test_get_by_prediction_time_range(self, mock_db, config):
+        """Test getting predictions by time range."""
+        from datetime import datetime
+
+        mock_collection = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.sort.return_value.limit.return_value = [
+            {"_id": "1", "prediction_time": datetime(2024, 1, 1, 10, 0)},
+            {"_id": "2", "prediction_time": datetime(2024, 1, 1, 11, 0)},
+        ]
+        mock_collection.find.return_value = mock_cursor
+        mock_db.__getitem__.return_value = mock_collection
+
+        repo = PredictionRepository(mock_db, config)
+        start = datetime(2024, 1, 1, 9, 0)
+        end = datetime(2024, 1, 1, 12, 0)
+        results = repo.get_by_prediction_time_range("559", start, end)
+
+        assert len(results) == 2
+        mock_collection.find.assert_called_once()
+        # Verify the query contains the time range filter
+        call_args = mock_collection.find.call_args[0][0]
+        assert "prediction_time" in call_args
+        assert "$gte" in call_args["prediction_time"]
+        assert "$lte" in call_args["prediction_time"]
+
+
+class TestMeasurementRepositoryDateRange:
+    """Tests for MeasurementRepository date range methods."""
+
+    def test_get_by_date_range(self, mock_db, config):
+        """Test getting measurements by date range."""
+        from datetime import datetime
+
+        mock_collection = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.sort.return_value.limit.return_value = [
+            {"_id": "1", "effectiveDateTime": "2024-01-01T10:00:00"},
+            {"_id": "2", "effectiveDateTime": "2024-01-01T11:00:00"},
+        ]
+        mock_collection.find.return_value = mock_cursor
+        mock_db.__getitem__.return_value = mock_collection
+
+        repo = MeasurementRepository(mock_db, config)
+        start = datetime(2024, 1, 1, 9, 0)
+        end = datetime(2024, 1, 1, 12, 0)
+        results = repo.get_by_date_range("559", start, end)
+
+        assert len(results) == 2
+        mock_collection.find.assert_called_once()
+        # Verify the query contains the date range filter
+        call_args = mock_collection.find.call_args[0][0]
+        assert "effectiveDateTime" in call_args
+        assert "$gte" in call_args["effectiveDateTime"]
+        assert "$lte" in call_args["effectiveDateTime"]
+
+    def test_get_by_date_range_with_limit(self, mock_db, config):
+        """Test getting measurements by date range with custom limit."""
+        from datetime import datetime
+
+        mock_collection = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.sort.return_value.limit.return_value = []
+        mock_collection.find.return_value = mock_cursor
+        mock_db.__getitem__.return_value = mock_collection
+
+        repo = MeasurementRepository(mock_db, config)
+        start = datetime(2024, 1, 1, 9, 0)
+        end = datetime(2024, 1, 1, 12, 0)
+        repo.get_by_date_range("559", start, end, limit=50)
+
+        mock_cursor.sort.return_value.limit.assert_called_with(50)
+
+    def test_watch(self, mock_db, config):
+        """Test watching for measurement changes."""
+        mock_collection = MagicMock()
+        mock_change_stream = MagicMock()
+        mock_collection.watch.return_value = mock_change_stream
+        mock_db.__getitem__.return_value = mock_collection
+
+        repo = MeasurementRepository(mock_db, config)
+        result = repo.watch("559")
+
+        assert result == mock_change_stream
+        mock_collection.watch.assert_called_once()
+        # Verify default pipeline
+        call_args = mock_collection.watch.call_args[0][0]
+        assert call_args == [{"$match": {"operationType": "insert"}}]
+
+    def test_watch_with_custom_pipeline(self, mock_db, config):
+        """Test watching with custom pipeline."""
+        mock_collection = MagicMock()
+        mock_change_stream = MagicMock()
+        mock_collection.watch.return_value = mock_change_stream
+        mock_db.__getitem__.return_value = mock_collection
+
+        repo = MeasurementRepository(mock_db, config)
+        custom_pipeline = [{"$match": {"operationType": "update"}}]
+        result = repo.watch("559", pipeline=custom_pipeline)
+
+        assert result == mock_change_stream
+        mock_collection.watch.assert_called_once_with(custom_pipeline)

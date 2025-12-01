@@ -147,3 +147,105 @@ class TestDataPipeline:
         # Only common columns should remain
         assert set(aligned_train.columns) == {"feat1", "feat2"}
         assert set(aligned_test.columns) == {"feat1", "feat2"}
+
+    def test_align_columns_preserves_order(self, mock_provider, config):
+        """Test column alignment preserves training column order."""
+        train_df = pd.DataFrame(
+            {
+                "z_feat": [1, 2],
+                "a_feat": [3, 4],
+                "m_feat": [5, 6],
+            }
+        )
+        test_df = pd.DataFrame(
+            {
+                "a_feat": [1, 2],
+                "m_feat": [3, 4],
+                "z_feat": [7, 8],
+            }
+        )
+
+        pipeline = DataPipeline(mock_provider, config)
+        aligned_train, aligned_test = pipeline.align_columns(train_df, test_df)
+
+        # Order should match training DataFrame
+        assert list(aligned_train.columns) == ["z_feat", "a_feat", "m_feat"]
+        assert list(aligned_test.columns) == ["z_feat", "a_feat", "m_feat"]
+
+    def test_align_columns_identical_columns(self, mock_provider, config):
+        """Test alignment when columns are identical."""
+        train_df = pd.DataFrame({"feat1": [1], "feat2": [2]})
+        test_df = pd.DataFrame({"feat1": [3], "feat2": [4]})
+
+        pipeline = DataPipeline(mock_provider, config)
+        aligned_train, aligned_test = pipeline.align_columns(train_df, test_df)
+
+        assert list(aligned_train.columns) == ["feat1", "feat2"]
+        assert list(aligned_test.columns) == ["feat1", "feat2"]
+
+    def test_remove_gaps_with_corrections(self, mock_provider, config):
+        """Test gap removal when corrections are enabled."""
+        # Create DataFrame with a gap (end_time jumps from 2 to 5)
+        df = pd.DataFrame(
+            {
+                "end_time": [1, 2, 5, 6, 7, 8, 9, 10],
+                "value": [100, 110, 120, 130, 140, 150, 160, 170],
+            }
+        )
+
+        pipeline = DataPipeline(mock_provider, config)
+        result = pipeline.remove_gaps(df, window=2, horizon=1, perform_corrections=True)
+
+        # The gap at index 2 should cause removal of surrounding rows
+        # Gap is at index 2, with horizon=1 and window=2
+        # Should remove indices: 2-1=1, 2, 2+1=3, 2+2=4 (actually from -horizon to window-1)
+        assert len(result) < len(df)
+
+    def test_remove_gaps_removes_correct_indices(self, mock_provider, config):
+        """Test gap removal removes the correct indices around gaps."""
+        # Gap between index 2 and 3 (end_time jumps from 3 to 10)
+        df = pd.DataFrame(
+            {
+                "end_time": [1, 2, 3, 10, 11, 12, 13, 14, 15, 16],
+                "value": list(range(10)),
+            }
+        )
+
+        pipeline = DataPipeline(mock_provider, config)
+        # With window=3, horizon=2, should remove points around the gap
+        result = pipeline.remove_gaps(df, window=3, horizon=2, perform_corrections=True)
+
+        # Original had 10 rows, gap at index 3
+        # Should remove: index 3-2=1, 3-1=2, 3, 3+1=4, 3+2=5 (from -horizon to window-1)
+        assert len(result) < 10
+
+    def test_remove_gaps_no_gaps(self, mock_provider, config):
+        """Test gap removal with no gaps returns same data."""
+        df = pd.DataFrame(
+            {
+                "end_time": [1, 2, 3, 4, 5],
+                "value": [100, 110, 120, 130, 140],
+            }
+        )
+
+        pipeline = DataPipeline(mock_provider, config)
+        result = pipeline.remove_gaps(df, window=2, horizon=1, perform_corrections=True)
+
+        # No gaps, so no rows should be removed
+        assert len(result) == len(df)
+
+    def test_process_returns_dataframe(self, mock_provider, config):
+        """Test process method returns a DataFrame."""
+        mock_df = pd.DataFrame(
+            {
+                "bg_value": [120, 125, 130],
+                "date_time": pd.date_range("2024-01-01", periods=3, freq="5min"),
+            }
+        )
+        mock_provider.tsfresh_dataframe.return_value = mock_df
+
+        pipeline = DataPipeline(mock_provider, config)
+        result = pipeline.process(truncate=0, window=2, horizon=1)
+
+        assert isinstance(result, pd.DataFrame)
+        mock_provider.tsfresh_dataframe.assert_called_once()
