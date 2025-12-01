@@ -2,6 +2,7 @@
 
 [![CodeQL Advanced](https://github.com/spitoglou/diabetes/actions/workflows/codeql.yml/badge.svg)](https://github.com/spitoglou/diabetes/actions/workflows/codeql.yml)
 [![Pylint](https://github.com/spitoglou/diabetes/actions/workflows/pylint.yml/badge.svg)](https://github.com/spitoglou/diabetes/actions/workflows/pylint.yml)
+[![Tests](https://github.com/spitoglou/diabetes/actions/workflows/test.yml/badge.svg)](https://github.com/spitoglou/diabetes/actions/workflows/test.yml)
 
 A machine learning system for predicting continuous glucose monitoring (CGM) readings, developed for a PhD thesis by Stavros Pitoglou.
 
@@ -107,8 +108,14 @@ See `.env.example` for all available options.
 ## Testing
 
 ```bash
-uv run pytest
+# Run tests with coverage (matching CI)
+uv run pytest --cov --cov-report=term-missing --ignore=tests/test_tsfresh_featurizer.py
+
+# Run all tests including slow tests
+uv run pytest --cov
 ```
+
+**Note:** `test_tsfresh_featurizer.py` is excluded from CI due to slow tsfresh feature extraction (>30s).
 
 ## Tech Stack
 

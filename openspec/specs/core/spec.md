@@ -256,3 +256,22 @@ Abstract method docstrings SHALL describe the expected behavior that implementat
 - **WHEN** pylint is run on the codebase
 - **THEN** no missing-module-docstring, missing-class-docstring, or missing-function-docstring warnings are reported for public API
 
+### Requirement: Automated Testing
+The system SHALL run automated tests via GitHub Actions on every push.
+
+Tests SHALL be executed using pytest with coverage reporting.
+
+Long-running tests (>30 seconds) SHALL be excluded from CI workflows to maintain fast feedback cycles.
+
+#### Scenario: Tests run on push
+- **WHEN** code is pushed to any branch
+- **THEN** the test workflow executes all fast tests
+
+#### Scenario: Slow tests excluded from CI
+- **WHEN** the CI test workflow runs
+- **THEN** tests in `test_tsfresh_featurizer.py` are excluded due to tsfresh feature extraction time
+
+#### Scenario: Coverage report generated
+- **WHEN** tests complete successfully
+- **THEN** a coverage report is generated showing line coverage percentage
+

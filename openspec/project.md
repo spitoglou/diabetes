@@ -158,10 +158,12 @@ diabetes/
 ```
 
 ### Testing Strategy
-- Test framework: pytest (default configuration)
+- Test framework: pytest with pytest-cov for coverage
 - Test location: `tests/`
-- Current tests: Provider functionality, CEGA metric validation
-- Gap: Limited integration and end-to-end tests
+- Run tests: `uv run pytest --cov --cov-report=term-missing`
+- CI exclusions: `tests/test_tsfresh_featurizer.py` is excluded from CI workflows due to slow tsfresh feature extraction (>30s)
+- To run all tests locally (including slow tests): `uv run pytest --cov`
+- To run tests matching CI: `uv run pytest --cov --ignore=tests/test_tsfresh_featurizer.py`
 
 ### Git Workflow
 - Main branch: `main`
