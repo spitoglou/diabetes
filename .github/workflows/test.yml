@@ -24,4 +24,10 @@ jobs:
           MONGO_URI: mongodb://localhost:27017
         run: |
           # Exclude test_tsfresh_featurizer.py - tsfresh feature extraction is too slow for CI
-          uv run pytest --cov --cov-report=term-missing --ignore=tests/test_tsfresh_featurizer.py
+          uv run pytest --cov --cov-report=term-missing --cov-report=xml --ignore=tests/test_tsfresh_featurizer.py
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true

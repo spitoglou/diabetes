@@ -7,6 +7,7 @@ Author: Stavros Pitoglou
 FastAPI server for receiving CGM glucose measurements.
 """
 
+from contextlib import asynccontextmanager
 from typing import Any, Dict, List
 
 import uvicorn
@@ -84,17 +85,10 @@ def get_measurement_repo(
     return MeasurementRepository(db, cfg)
 
 
-# FastAPI app
-app = FastAPI(
-    title="Diabetes CGM Server",
-    description="API for receiving CGM glucose measurements in FHIR format",
-    version="2.0.0",
-)
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Verify database connection on startup."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup
     try:
         cfg = get_config()
         mongo = MongoDB(cfg)
@@ -104,6 +98,17 @@ async def startup_event():
             logger.warning("Server started but MongoDB ping failed")
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"Failed to connect to MongoDB on startup: {e}")
+    yield
+    # Shutdown (if needed)
+
+
+# FastAPI app
+app = FastAPI(
+    title="Diabetes CGM Server",
+    description="API for receiving CGM glucose measurements in FHIR format",
+    version="2.0.0",
+    lifespan=lifespan,
+)
 
 
 @app.get("/")

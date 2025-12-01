@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from server import app, main, startup_event
+from server import app, lifespan, main
 
 
 @pytest.fixture
@@ -89,20 +89,22 @@ class TestPostReadingEndpoint:
 
     def test_post_reading_success(self, client, sample_fhir_observation):
         """Test successful measurement posting."""
-        with patch("server.get_measurement_repo") as mock_get_repo:
-            mock_repo = MagicMock()
-            mock_repo.save.return_value = "test_id_123"
-            mock_get_repo.return_value = mock_repo
+        from server import get_measurement_repo
 
-            # Override the dependency
-            app.dependency_overrides[mock_get_repo] = lambda: mock_repo
+        mock_repo = MagicMock()
+        mock_repo.save.return_value = "test_id_123"
 
+        app.dependency_overrides[get_measurement_repo] = lambda: mock_repo
+
+        try:
             response = client.post("/bg/reading", json=sample_fhir_observation)
 
             assert response.status_code == 200
             data = response.json()
             assert data["message"] == "Success"
             assert "record_id" in data
+        finally:
+            app.dependency_overrides.clear()
 
     def test_post_reading_missing_required_fields(self, client):
         """Test posting with missing required fields."""
@@ -129,15 +131,19 @@ class TestFhirObservationModel:
 
     def test_valid_observation(self, client, sample_fhir_observation):
         """Test valid FHIR observation is accepted."""
-        with patch("server.get_measurement_repo") as mock_get_repo:
-            mock_repo = MagicMock()
-            mock_repo.save.return_value = "test_id"
-            mock_get_repo.return_value = mock_repo
-            app.dependency_overrides[mock_get_repo] = lambda: mock_repo
+        from server import get_measurement_repo
 
+        mock_repo = MagicMock()
+        mock_repo.save.return_value = "test_id"
+
+        app.dependency_overrides[get_measurement_repo] = lambda: mock_repo
+
+        try:
             response = client.post("/bg/reading", json=sample_fhir_observation)
 
             assert response.status_code == 200
+        finally:
+            app.dependency_overrides.clear()
 
     def test_missing_subject_identifier(self, client, sample_fhir_observation):
         """Test missing subject identifier."""
@@ -161,18 +167,22 @@ class TestValueQuantityModel:
 
     def test_default_unit(self, client, sample_fhir_observation):
         """Test default unit is mg/dL."""
+        from server import get_measurement_repo
+
         del sample_fhir_observation["valueQuantity"]["unit"]
 
-        with patch("server.get_measurement_repo") as mock_get_repo:
-            mock_repo = MagicMock()
-            mock_repo.save.return_value = "test_id"
-            mock_get_repo.return_value = mock_repo
-            app.dependency_overrides[mock_get_repo] = lambda: mock_repo
+        mock_repo = MagicMock()
+        mock_repo.save.return_value = "test_id"
 
+        app.dependency_overrides[get_measurement_repo] = lambda: mock_repo
+
+        try:
             response = client.post("/bg/reading", json=sample_fhir_observation)
 
             # Should use default unit
             assert response.status_code == 200
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestErrorResponses:
@@ -213,11 +223,11 @@ class TestErrorResponses:
             app.dependency_overrides.clear()
 
 
-class TestStartupEvent:
-    """Tests for server startup event."""
+class TestLifespan:
+    """Tests for server lifespan events."""
 
-    def test_startup_event_success(self):
-        """Test startup event with successful MongoDB connection."""
+    def test_lifespan_startup_success(self):
+        """Test lifespan startup with successful MongoDB connection."""
         import asyncio
 
         with patch("server.get_config") as mock_get_config:
@@ -228,13 +238,17 @@ class TestStartupEvent:
                 mock_mongo.ping.return_value = True
                 MockMongo.return_value = mock_mongo
 
-                asyncio.get_event_loop().run_until_complete(startup_event())
+                async def run_lifespan():
+                    async with lifespan(app):
+                        pass
+
+                asyncio.get_event_loop().run_until_complete(run_lifespan())
 
                 MockMongo.assert_called_once_with(mock_config)
                 mock_mongo.ping.assert_called_once()
 
-    def test_startup_event_ping_fails(self):
-        """Test startup event when MongoDB ping fails."""
+    def test_lifespan_startup_ping_fails(self):
+        """Test lifespan startup when MongoDB ping fails."""
         import asyncio
 
         with patch("server.get_config") as mock_get_config:
@@ -245,13 +259,17 @@ class TestStartupEvent:
                 mock_mongo.ping.return_value = False
                 MockMongo.return_value = mock_mongo
 
+                async def run_lifespan():
+                    async with lifespan(app):
+                        pass
+
                 # Should not raise, just log warning
-                asyncio.get_event_loop().run_until_complete(startup_event())
+                asyncio.get_event_loop().run_until_complete(run_lifespan())
 
                 mock_mongo.ping.assert_called_once()
 
-    def test_startup_event_connection_error(self):
-        """Test startup event when MongoDB connection fails."""
+    def test_lifespan_startup_connection_error(self):
+        """Test lifespan startup when MongoDB connection fails."""
         import asyncio
 
         with patch("server.get_config") as mock_get_config:
@@ -260,8 +278,12 @@ class TestStartupEvent:
                 mock_get_config.return_value = mock_config
                 MockMongo.side_effect = Exception("Connection failed")
 
+                async def run_lifespan():
+                    async with lifespan(app):
+                        pass
+
                 # Should not raise, just log error
-                asyncio.get_event_loop().run_until_complete(startup_event())
+                asyncio.get_event_loop().run_until_complete(run_lifespan())
 
 
 class TestMainFunction:
