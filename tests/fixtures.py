@@ -128,7 +128,7 @@ def sample_feature_df() -> pd.DataFrame:
     )
 
 
-def create_mock_measurement_repo(measurements: List[Dict] = []):
+def create_mock_measurement_repo(measurements: List[Dict] | None = None):
     """Create a mock MeasurementRepository."""
     repo = MagicMock()
     repo.get_recent.return_value = measurements or []
@@ -137,7 +137,7 @@ def create_mock_measurement_repo(measurements: List[Dict] = []):
     return repo
 
 
-def create_mock_prediction_repo(predictions: List[Dict] = []):
+def create_mock_prediction_repo(predictions: List[Dict] | None = None):
     """Create a mock PredictionRepository."""
     repo = MagicMock()
     repo.get_recent.return_value = predictions or []

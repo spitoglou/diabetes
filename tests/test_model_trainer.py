@@ -68,7 +68,7 @@ class TestModelTrainerSpeedExclusions:
 
     def test_speed_1_includes_all(self):
         """Test speed 1 excludes nothing."""
-        assert ModelTrainer.SPEED_EXCLUSIONS[1] == []
+        assert not ModelTrainer.SPEED_EXCLUSIONS[1]
 
     def test_speed_3_excludes_most(self):
         """Test speed 3 excludes the most models."""

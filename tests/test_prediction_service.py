@@ -89,7 +89,7 @@ class TestPredictionServiceInit:
         with patch("src.services.prediction_service.FeatureEngineer") as MockEngineer:
             MockEngineer.return_value = MagicMock()
 
-            service = PredictionService(
+            PredictionService(
                 measurement_repo=mock_measurement_repo,
                 prediction_repo=mock_prediction_repo,
                 config=test_config,

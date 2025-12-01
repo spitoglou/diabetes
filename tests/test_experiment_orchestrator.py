@@ -105,7 +105,7 @@ class TestExperimentResults:
         assert results.horizon == 6
         assert results.holdout_metrics is None
         assert results.unseen_metrics is None
-        assert results.best_models == []
+        assert not results.best_models
         assert results.execution_time == 0.0
 
     def test_with_all_values(self):
