@@ -38,10 +38,11 @@ uv run python cli.py info            # Show current configuration
 uv run python cli.py data check      # Verify Ohio dataset
 uv run python cli.py train simple    # Train model (simple)
 uv run python cli.py train full      # Train model (full experiment)
-uv run python cli.py serve start          # Start API server
-uv run python cli.py serve client         # Stream CGM data (historical timestamps)
-uv run python cli.py serve synced-client  # Stream CGM data (real-time timestamps)
-uv run python cli.py serve predict        # Run predictions
+uv run python cli.py serve start              # Start API server
+uv run python cli.py serve client             # Stream CGM data (historical timestamps)
+uv run python cli.py serve synced-client      # Stream CGM data (real-time timestamps)
+uv run python cli.py serve simglucose-client  # Stream synthetic CGM data (simglucose)
+uv run python cli.py serve predict            # Run predictions
 ```
 
 ### Train Commands with Options
@@ -71,6 +72,22 @@ uv run python cli.py serve synced-client -p 570 -v  # verbose mode
 # Run predictions with custom parameters
 uv run python cli.py serve predict --patient 570 --window 12 --horizon 6
 uv run python cli.py serve predict -p 570 -w 12 -H 6  # short form
+
+# Stream synthetic data from simglucose simulation
+uv run python cli.py serve simglucose-client                    # Default patient, sync to current time
+uv run python cli.py serve simglucose-client -p adolescent#001  # Different virtual patient
+uv run python cli.py serve simglucose-client --seed 42          # Reproducible simulation
+uv run python cli.py serve simglucose-client --no-sync -v       # Start from midnight, verbose
+uv run python cli.py serve simglucose-client -i none            # No insulin (open-loop)
+uv run python cli.py serve simglucose-client -i basal           # Basal insulin only (default)
+uv run python cli.py serve simglucose-client -i basal-bolus     # Basal + meal boluses
+
+# Configurable insulin parameters (override patient defaults)
+uv run python cli.py serve simglucose-client -i basal-bolus --basal-rate 1.2      # Custom basal (U/hr)
+uv run python cli.py serve simglucose-client -i basal-bolus --target-glucose 120  # Custom target (mg/dL)
+uv run python cli.py serve simglucose-client -i basal-bolus --carb-ratio 12       # Custom CR (g/U)
+uv run python cli.py serve simglucose-client -i basal-bolus --correction-factor 50 # Custom CF (mg/dL/U)
+uv run python cli.py serve simglucose-client -i basal-bolus --pre-bolus-minutes 15 # Pre-bolus 15min before meals
 ```
 
 ## Real-Time Prediction System

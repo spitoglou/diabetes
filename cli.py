@@ -172,6 +172,130 @@ def serve_synced_client(
     stream_synced_data(send_to_service=True, verbose=verbose, patient=patient)
 
 
+@serve_app.command("simglucose-client")
+def serve_simglucose_client(
+    patient: str = typer.Option(
+        None,
+        "--patient",
+        "-p",
+        help="Virtual patient name (e.g., adult#001, adolescent#001)",
+    ),
+    seed: int = typer.Option(
+        None, "--seed", "-s", help="Random seed for reproducibility"
+    ),
+    insulin_mode: str = typer.Option(
+        None,
+        "--insulin-mode",
+        "-i",
+        help="Insulin mode: none, basal (default), basal-bolus",
+    ),
+    basal_rate: float = typer.Option(
+        None,
+        "--basal-rate",
+        "-b",
+        help="Basal insulin rate in U/hr (0.0-5.0). Overrides patient default.",
+    ),
+    target_glucose: float = typer.Option(
+        None,
+        "--target-glucose",
+        "-t",
+        help="Target glucose for corrections in mg/dL (70-200). Default: 140.",
+    ),
+    carb_ratio: float = typer.Option(
+        None,
+        "--carb-ratio",
+        "-c",
+        help="Carb ratio in g/U (1-50). Grams of carbs per unit insulin.",
+    ),
+    correction_factor: float = typer.Option(
+        None,
+        "--correction-factor",
+        "-f",
+        help="Correction factor in mg/dL/U (5-200). BG drop per unit insulin.",
+    ),
+    pre_bolus_minutes: int = typer.Option(
+        None,
+        "--pre-bolus-minutes",
+        "-B",
+        help="Minutes before meal to deliver bolus (0-45). Default: 0.",
+    ),
+    no_sync: bool = typer.Option(
+        False, "--no-sync", help="Start from midnight instead of current time"
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
+):
+    """Start the simglucose CGM simulation client.
+
+    Streams synthetic CGM data using the simglucose library with FDA-approved
+    UVA/Padova virtual patient models. By default, fast-forwards to current
+    time of day so meal effects are realistic.
+
+    Available patients: adult#001-010, adolescent#001-010, child#001-010
+
+    Insulin modes:
+      none        - Open-loop, no insulin (glucose will rise after meals)
+      basal       - Basal insulin only (default, maintains baseline)
+      basal-bolus - Full basal-bolus controller (handles meal spikes)
+
+    Configurable insulin parameters (override patient defaults):
+      --basal-rate       - Continuous background insulin (U/hr)
+      --target-glucose   - Goal BG for correction boluses (mg/dL)
+      --carb-ratio       - Carbs covered per unit insulin (g/U)
+      --correction-factor - BG drop per unit insulin (mg/dL/U)
+      --pre-bolus-minutes - Deliver meal bolus early (minutes)
+
+    Examples:
+      # Default basal-bolus with patient parameters
+      uv run python cli.py serve simglucose-client -i basal-bolus
+
+      # Custom insulin settings
+      uv run python cli.py serve simglucose-client -i basal-bolus \\
+          --basal-rate 1.2 --target-glucose 120 --carb-ratio 12
+
+      # Pre-bolus 15 minutes before meals
+      uv run python cli.py serve simglucose-client -i basal-bolus -B 15
+    """
+    from config.settings import settings
+
+    patient_name = patient or settings.SIMGLUCOSE_PATIENT
+    mode = insulin_mode or settings.SIMGLUCOSE_INSULIN_MODE
+    typer.echo(f"Starting simglucose client for patient {patient_name}...")
+    typer.echo(f"Insulin mode: {mode}")
+
+    # Show configured parameters
+    if basal_rate is not None:
+        typer.echo(f"Basal rate override: {basal_rate} U/hr")
+    if target_glucose is not None:
+        typer.echo(f"Target glucose: {target_glucose} mg/dL")
+    if carb_ratio is not None:
+        typer.echo(f"Carb ratio override: {carb_ratio} g/U")
+    if correction_factor is not None:
+        typer.echo(f"Correction factor override: {correction_factor} mg/dL/U")
+    if pre_bolus_minutes is not None and pre_bolus_minutes > 0:
+        typer.echo(f"Pre-bolus time: {pre_bolus_minutes} minutes")
+
+    if not no_sync:
+        typer.echo("Syncing to current time of day...")
+    if seed is not None:
+        typer.echo(f"Using random seed: {seed}")
+
+    from scripts.serving.client import stream_simglucose_data
+
+    stream_simglucose_data(
+        send_to_service=True,
+        verbose=verbose,
+        patient=patient,
+        seed=seed,
+        sync=not no_sync,
+        insulin_mode=insulin_mode,
+        basal_rate=basal_rate,
+        target_glucose=target_glucose,
+        carb_ratio=carb_ratio,
+        correction_factor=correction_factor,
+        pre_bolus_minutes=pre_bolus_minutes,
+    )
+
+
 @serve_app.command("predict")
 def serve_predict(
     patient: str = typer.Option(

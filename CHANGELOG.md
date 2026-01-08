@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-01-08
+
+### Added
+- **Simglucose client command** (`serve simglucose-client`) for synthetic CGM simulation
+  - Uses FDA-approved UVA/Padova T1D simulator with 30 virtual patients
+  - Supports time-synced streaming (fast-forward to current time of day)
+  - Three insulin modes: `none` (open-loop), `basal`, `basal-bolus`
+  - Configurable meal schedules via `--meals` option
+  - Reproducible simulations via `--seed` option
+- **ConfigurableController** for customizable insulin delivery parameters
+  - `--basal-rate, -b`: Basal insulin rate in U/hr (0.0-5.0)
+  - `--target-glucose, -t`: Target glucose for corrections in mg/dL (70-200)
+  - `--carb-ratio, -c`: Carbohydrate ratio in g/U (1-50)
+  - `--correction-factor, -f`: Correction factor in mg/dL/U (5-200)
+  - `--pre-bolus-minutes, -B`: Pre-meal bolus timing in minutes (0-45)
+- **SimglucoseProvider** class in `src/bgc_providers/` for simglucose integration
+- **Comprehensive documentation** for insulin parameters (`docs/simglucose-insulin-parameters.md`)
+  - Clinical significance and algorithms for each parameter
+  - Validation scenarios with 24-hour timetables
+- **Test suite** for ConfigurableController (25 tests)
+  - BBController equivalence validation
+  - Parameter range validation
+  - Custom behavior verification
+- **OpenSpec specifications** for insulin-controller capability
+
+### Changed
+- **Settings** extended with simglucose configuration options
+- **CLI** updated with new insulin parameter options for `serve simglucose-client`
+
 ## [0.3.0] - 2026-01-08
 
 ### Added

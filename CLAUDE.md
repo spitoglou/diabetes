@@ -43,10 +43,11 @@ uv run python cli.py info            # Show current configuration
 uv run python cli.py data check      # Verify Ohio dataset availability
 uv run python cli.py train simple    # Train model (simple)
 uv run python cli.py train full      # Train model (full experiment)
-uv run python cli.py serve start          # Start FastAPI server
-uv run python cli.py serve client         # Stream CGM data (historical timestamps)
-uv run python cli.py serve synced-client  # Stream CGM data (real-time timestamps)
-uv run python cli.py serve predict        # Run prediction watcher
+uv run python cli.py serve start              # Start FastAPI server
+uv run python cli.py serve client             # Stream CGM data (historical timestamps)
+uv run python cli.py serve synced-client      # Stream CGM data (real-time timestamps)
+uv run python cli.py serve simglucose-client  # Stream synthetic CGM (simglucose)
+uv run python cli.py serve predict            # Run prediction watcher
 
 # Train commands with custom parameters
 uv run python cli.py train simple -p 559 -w 12 -h 6      # Simple training
@@ -55,6 +56,11 @@ uv run python cli.py train full -p 559 -w 12 -h 6 --no-neptune  # Full experimen
 # Serve commands with patient-specific options
 uv run python cli.py serve client -p 570 -v              # Stream for patient 570 (historical)
 uv run python cli.py serve synced-client -p 570 -v       # Stream for patient 570 (real-time)
+uv run python cli.py serve simglucose-client -p adult#001 -v  # Simglucose virtual patient
+uv run python cli.py serve simglucose-client -i basal         # Basal insulin (default)
+uv run python cli.py serve simglucose-client -i none          # No insulin (open-loop)
+uv run python cli.py serve simglucose-client -i basal-bolus --basal-rate 1.2  # Custom basal
+uv run python cli.py serve simglucose-client -i basal-bolus -B 15  # Pre-bolus 15min before meals
 uv run python cli.py serve predict -p 570 -w 12 -H 6     # Predict with custom window/horizon
 
 # Run tests

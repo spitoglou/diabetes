@@ -13,6 +13,8 @@
 
 ### 2026-01-08
 
+- **OpenSpec add-configurable-insulin** | Completed | ConfigurableController with customizable basal rate, CR, CF, target, pre-bolus timing
+- **OpenSpec add-simglucose-client** | Completed | New CLI command `serve simglucose-client` for synthetic CGM streaming via simglucose
 - **OpenSpec add-synced-client** | Completed | New CLI command `serve synced-client` for real-time timestamp streaming
 - [arch-assessment-20260108](arch/arch-assessment-20260108.md) | Completed | Full architecture review: 16 refactorings, 4-phase migration plan, UV package management
 - **OpenSpec refactor-architecture** | Completed | 4-phase refactoring executed: dead code removal, config consolidation, CLI, type safety

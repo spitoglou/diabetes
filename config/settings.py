@@ -41,6 +41,27 @@ class Settings(BaseSettings):
     # Simulation Configuration
     INTERVAL: int = 20
 
+    # Simglucose Configuration
+    SIMGLUCOSE_PATIENT: str = "adult#001"
+    SIMGLUCOSE_SEED: Optional[int] = None
+    # Default meal schedule: (hour, carbs_grams)
+    # Breakfast 7am (45g), Lunch 12pm (70g), Snack 4pm (15g), Dinner 6pm (80g), Bedtime 11pm (10g)
+    SIMGLUCOSE_MEALS: str = "7:45,12:70,16:15,18:80,23:10"
+    # Insulin mode: "none" (open-loop), "basal" (basal only), "basal-bolus" (full control)
+    SIMGLUCOSE_INSULIN_MODE: str = "basal"
+
+    # Configurable Insulin Parameters (None = use patient-specific defaults)
+    # Basal rate in U/hr - continuous background insulin (typical: 0.5-2.0 U/hr for adults)
+    SIMGLUCOSE_BASAL_RATE: Optional[float] = None
+    # Target glucose in mg/dL for correction boluses (typical: 100-150 mg/dL)
+    SIMGLUCOSE_TARGET_GLUCOSE: float = 140.0
+    # Carb ratio in g/U - grams of carbs covered by 1 unit insulin (typical: 5-25 g/U)
+    SIMGLUCOSE_CARB_RATIO: Optional[float] = None
+    # Correction factor in mg/dL/U - glucose drop per 1 unit insulin (typical: 20-100 mg/dL/U)
+    SIMGLUCOSE_CORRECTION_FACTOR: Optional[float] = None
+    # Pre-bolus time in minutes - deliver meal bolus before eating (typical: 0-30 min)
+    SIMGLUCOSE_PRE_BOLUS_MINUTES: int = 0
+
     # Logging Configuration
     LOG_LEVEL: str = "INFO"
     LOG_JSON: bool = False
