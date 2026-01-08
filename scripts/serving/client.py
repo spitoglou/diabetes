@@ -159,7 +159,7 @@ def stream_simglucose_data(
                 if r.status_code != 200:
                     logger.warning(r.text)
                 logger.success(values)
-            sleep(settings.INTERVAL)
+            sleep(settings.SIMGLUCOSE_INTERVAL)
     except KeyboardInterrupt:
         print("Interrupted by the user")
 

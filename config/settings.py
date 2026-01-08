@@ -38,8 +38,22 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # Simulation Configuration
-    INTERVAL: int = 20
+    # Streaming Interval Configuration
+    # These control the delay between sending CGM readings to the server.
+    # Realistic values should match the CGM sensor's actual sample time.
+    #
+    # Ohio dataset clients (client, synced-client):
+    #   - Data collected with Medtronic Guardian sensors (5-minute intervals)
+    #   - Realistic: 300 seconds
+    #
+    # Simglucose client (simglucose-client):
+    #   - Uses Dexcom CGM sensor model (3-minute intervals)
+    #   - Realistic: 180 seconds
+    #
+    # Default values are set for fast demo/testing. Use realistic values
+    # for production or accurate simulation timing.
+    INTERVAL: int = 300  # Ohio clients: 300s realistic, 20s for fast demo
+    SIMGLUCOSE_INTERVAL: int = 180  # Simglucose: 180s realistic (Dexcom 3-min)
 
     # Simglucose Configuration
     SIMGLUCOSE_PATIENT: str = "adult#001"
