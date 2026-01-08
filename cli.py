@@ -132,14 +132,20 @@ def serve_start(
 
 @serve_app.command("client")
 def serve_client(
+    patient: str = typer.Option(
+        None, "--patient", "-p", help="Patient ID (default: from settings)"
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
 ):
     """Start the CGM data streaming client."""
-    typer.echo("Starting CGM data streaming client...")
+    from config.settings import settings
+
+    patient_id = patient or settings.OHIO_ID
+    typer.echo(f"Starting CGM data streaming client for patient {patient_id}...")
 
     from scripts.serving.client import stream_data
 
-    stream_data(send_to_service=True, verbose=verbose)
+    stream_data(send_to_service=True, verbose=verbose, patient=patient)
 
 
 @serve_app.command("predict")

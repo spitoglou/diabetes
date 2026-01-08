@@ -15,17 +15,21 @@ from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
 from src.helpers.fhir import create_fhir_json_from_reading
 
 
-def stream_data(send_to_service: bool = True, verbose: bool = False):
+def stream_data(
+    send_to_service: bool = True, verbose: bool = False, patient: str | None = None
+):
     """Συνάρτηση ανάκτησης, προετοιμασίας και αποστολής σειράς μετρήσεων
         για το simulation και τη δοκιμή γεννήτριας μετρήσεων CGM
 
     Args:
         send_to_service (bool, optional): Διακόπτης τελικής αποστολής στο service. Defaults to True.
         verbose (bool, optional): Διακόπτης εκτεταμένων μηνυμάτων εκτέλεσης. Defaults to False.
+        patient (str, optional): Patient ID to stream data for. Defaults to settings.OHIO_ID.
     """
 
     # Ορισμός της μεθόδου streaming από τον αντίστοιχο provider
-    provider = OhioBgcProvider(ohio_no=settings.OHIO_ID)
+    patient_id = patient or settings.OHIO_ID
+    provider = OhioBgcProvider(ohio_no=patient_id)
     stream = provider.simulate_glucose_stream()
     try:
         # Εκτέλεση ατέρμονου βρόχου έως την ακύρωση από το χρήστη
