@@ -25,7 +25,25 @@ This verifies the Ohio dataset files are accessible and lists available patient 
 uv run python cli.py train simple --patient 559
 ```
 
-**Full experiment framework:**
+**With custom window and horizon:**
+```bash
+uv run python cli.py train simple --patient 559 --window 12 --horizon 6
+uv run python cli.py train simple -p 559 -w 12 -h 6  # short form
+```
+
+**Full experiment with all options:**
+```bash
+uv run python cli.py train full -p 559 -w 12 -h 6 --no-neptune --speed 2
+```
+
+Options for `train full`:
+- `--patient/-p`: Patient ID (default: 559)
+- `--window/-w`: Window size in steps (default: 12)
+- `--horizon/-h`: Prediction horizon in steps (default: 6)
+- `--neptune/--no-neptune`: Enable/disable Neptune.ai logging (default: enabled)
+- `--speed/-s`: Speed setting 1=full, 2=medium, 3=fast (default: 1)
+
+**Direct script execution:**
 ```bash
 uv run python scripts/training/train_best_model_559.py
 ```
