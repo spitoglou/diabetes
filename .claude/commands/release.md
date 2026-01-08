@@ -21,17 +21,23 @@ Add a new version section under `## [Unreleased]` with today's date:
 - Use clear, concise descriptions with **bold** feature names
 - Reference any relevant issues or components
 
-## 3. Update Documentation
+## 3. Update Documentation (MANDATORY)
 
-Review and update any documentation affected by the changes:
+**This step is mandatory.** Review and update ALL documentation affected by the changes before proceeding:
 
-- **`docs/` folder**: Update relevant docs (SERVICES.md, API_REFERENCE.md, DATABASE_SCHEMA.md, ARCHITECTURE.md) if:
+- **`README.md`**: MUST update if any new CLI commands, features, or usage patterns were added
+- **`CLAUDE.md`**: MUST update if any new CLI commands, configuration options, or workflows were added
+- **`docs/` folder**: Update relevant docs if:
   - New service methods or API endpoints were added
   - Database schema changed
   - Architecture or patterns changed
-- **`README.md`**: Update if there are user-facing feature changes or setup changes
 - **`.claude/reports/_registry.md`**: Add entry if any investigation reports were created during this work
 - **ADRs**: Create new ADR in `.claude/reports/arch/adr/` if significant architectural decisions were made
+
+**Checklist before proceeding:**
+- [ ] All new CLI commands documented in README.md and CLAUDE.md
+- [ ] All new options/flags documented with examples
+- [ ] API changes reflected in docs/api.md (if applicable)
 
 ## 4. Update Version Files
 
