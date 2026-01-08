@@ -10,7 +10,7 @@ from time import sleep
 import requests
 from loguru import logger
 
-from config.simulation_config import INTERVAL, OHIO_ID
+from config.settings import settings
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
 from src.helpers.fhir import create_fhir_json_from_reading
 
@@ -25,7 +25,7 @@ def stream_data(send_to_service: bool = True, verbose: bool = False):
     """
 
     # Ορισμός της μεθόδου streaming από τον αντίστοιχο provider
-    provider = OhioBgcProvider(ohio_no=OHIO_ID)
+    provider = OhioBgcProvider(ohio_no=settings.OHIO_ID)
     stream = provider.simulate_glucose_stream()
     try:
         # Εκτέλεση ατέρμονου βρόχου έως την ακύρωση από το χρήστη
@@ -38,13 +38,15 @@ def stream_data(send_to_service: bool = True, verbose: bool = False):
             logger.info(payload) if verbose else ...
             # αποστολή στο RESTful endpoint του service (εφόσον είναι ενεργοποιημένη)
             if send_to_service:
-                r = requests.post("http://localhost:8000/bg/reading", data=payload)
+                r = requests.post(
+                    f"http://localhost:{settings.PORT}/bg/reading", data=payload
+                )
                 logger.info(r.status_code) if verbose else ...
                 logger.info(r.text) if verbose else ...
                 if r.status_code != 200:
                     logger.warning(r.text)
                 logger.success(values)
-            sleep(INTERVAL)
+            sleep(settings.INTERVAL)
     except KeyboardInterrupt:
         print("Interrupted by the user")
 
