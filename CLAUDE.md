@@ -38,13 +38,14 @@ uv sync                             # Install dependencies from uv.lock
 cp .env.example .env                # Configure environment
 
 # CLI commands (recommended)
-uv run python cli.py --help         # Show all commands
-uv run python cli.py info           # Show current configuration
-uv run python cli.py check-datasets # Verify Ohio dataset availability
-uv run python cli.py train          # Train model for configured patient
-uv run python cli.py serve          # Start FastAPI server
-uv run python cli.py stream         # Stream CGM data to server
-uv run python cli.py predict        # Run prediction watcher
+uv run python cli.py --help          # Show all commands
+uv run python cli.py info            # Show current configuration
+uv run python cli.py data check      # Verify Ohio dataset availability
+uv run python cli.py train simple    # Train model (simple)
+uv run python cli.py train full      # Train model (full experiment)
+uv run python cli.py serve start     # Start FastAPI server
+uv run python cli.py serve client    # Stream CGM data to server
+uv run python cli.py serve predict   # Run prediction watcher
 
 # Run tests
 uv run pytest tests/

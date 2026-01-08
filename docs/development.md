@@ -321,7 +321,7 @@ REQUIRED_SETTING=value
 
 ```bash
 export DEBUG=true
-uv run python cli.py serve
+uv run python cli.py serve start
 ```
 
 ### Debug Logging

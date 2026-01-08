@@ -13,7 +13,7 @@ This guide covers training blood glucose prediction models using the Diabetes BG
 ### Check Dataset Availability
 
 ```bash
-uv run python cli.py check-datasets
+uv run python cli.py data check
 ```
 
 This verifies the Ohio dataset files are accessible and lists available patient IDs.
@@ -22,7 +22,7 @@ This verifies the Ohio dataset files are accessible and lists available patient 
 
 **Simple training (recommended for first run):**
 ```bash
-uv run python cli.py train --patient 559
+uv run python cli.py train simple --patient 559
 ```
 
 **Full experiment framework:**

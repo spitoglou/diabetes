@@ -22,10 +22,10 @@ cp .env.example .env    # Configure environment
 uv run python cli.py info
 
 # Check dataset availability
-uv run python cli.py check-datasets
+uv run python cli.py data check
 
 # Train model
-uv run python cli.py train --patient 559
+uv run python cli.py train simple --patient 559
 ```
 
 ## CLI Commands
@@ -33,13 +33,14 @@ uv run python cli.py train --patient 559
 The project provides a unified command-line interface:
 
 ```bash
-uv run python cli.py --help         # Show all commands
-uv run python cli.py info           # Show current configuration
-uv run python cli.py check-datasets # Verify Ohio dataset
-uv run python cli.py train          # Train model
-uv run python cli.py serve          # Start API server
-uv run python cli.py stream         # Stream CGM data
-uv run python cli.py predict        # Run predictions
+uv run python cli.py --help          # Show all commands
+uv run python cli.py info            # Show current configuration
+uv run python cli.py data check      # Verify Ohio dataset
+uv run python cli.py train simple    # Train model (simple)
+uv run python cli.py train full      # Train model (full experiment)
+uv run python cli.py serve start     # Start API server
+uv run python cli.py serve client    # Stream CGM data
+uv run python cli.py serve predict   # Run predictions
 ```
 
 ## Real-Time Prediction System
@@ -47,9 +48,9 @@ uv run python cli.py predict        # Run predictions
 Run in 3 separate terminals:
 
 ```bash
-uv run python cli.py serve          # FastAPI server on port 8000
-uv run python cli.py stream         # Stream test data
-uv run python cli.py predict        # Monitor and predict
+uv run python cli.py serve start    # FastAPI server on port 8000
+uv run python cli.py serve client   # Stream test data
+uv run python cli.py serve predict  # Monitor and predict
 ```
 
 Or using direct scripts:
