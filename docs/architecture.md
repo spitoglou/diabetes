@@ -4,7 +4,14 @@ This document describes the system architecture of the Diabetes Blood Glucose Pr
 
 ## System Overview
 
-The system predicts blood glucose levels 30 minutes ahead (6 steps × 5-minute intervals) using continuous glucose monitoring (CGM) data from the Ohio T1DM dataset.
+The system predicts blood glucose levels ahead using continuous glucose monitoring (CGM) data. The prediction time depends on the CGM sensor's sample interval:
+
+| Data Source | Sensor | Sample Interval | Example: 6-step prediction |
+|-------------|--------|-----------------|---------------------------|
+| Ohio T1DM dataset | Medtronic Guardian | 5 minutes | 30 minutes ahead |
+| Simglucose | Dexcom G6 | 3 minutes | 18 minutes ahead |
+
+**Formula:** `prediction_time = horizon_steps × sample_interval`
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐

@@ -30,6 +30,24 @@ class Settings(BaseSettings):
     WINDOW_STEPS: int = 6
     PREDICTION_HORIZON: int = 6
 
+    # CGM Sample Interval Configuration
+    # The time interval (in minutes) between consecutive CGM readings.
+    # This is critical for:
+    #   - Prediction time calculation (horizon_steps * sample_interval = minutes ahead)
+    #   - Feature extraction window (window_steps * sample_interval = minutes of history)
+    #   - Model training and inference consistency
+    #
+    # Common CGM sensor sample intervals:
+    #   - Medtronic Guardian (Ohio dataset): 5 minutes
+    #   - Dexcom G6 (simglucose default): 3 minutes
+    #   - Abbott FreeStyle Libre: 1 minute (internal), 15 minutes (scan)
+    #
+    # IMPORTANT: Models trained on one interval cannot be used with different intervals.
+    # Train separate models for each data source with its native sample interval.
+    SAMPLE_INTERVAL: int = (
+        5  # Minutes between CGM readings (5 for Ohio, 3 for simglucose)
+    )
+
     # Server Configuration
     DEBUG: bool = False
     DATABASE: str = (

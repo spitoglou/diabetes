@@ -1,6 +1,11 @@
 # Diabetes Blood Glucose Prediction
 
-Machine learning system for predicting blood glucose levels 30 minutes ahead using continuous glucose monitoring (CGM) data from Type 1 diabetic patients.
+Machine learning system for predicting blood glucose levels using continuous glucose monitoring (CGM) data from Type 1 diabetic patients. Supports multiple data sources with different sampling intervals:
+
+| Data Source | Sensor | Sample Interval | 6-step prediction |
+|-------------|--------|-----------------|-------------------|
+| Ohio T1DM dataset | Medtronic Guardian | 5 minutes | 30 min ahead |
+| Simglucose | Dexcom G6 | 3 minutes | 18 min ahead |
 
 ## Purpose
 

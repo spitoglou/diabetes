@@ -163,8 +163,27 @@ def create_measurements_list(timeseries_df):
     return meas_list, measurement
 
 
-def mongo_prediction(window_steps, prediction_horizon, patient_id: str | None = None):
+def mongo_prediction(
+    window_steps,
+    prediction_horizon,
+    patient_id: str | None = None,
+    sample_interval: int | None = None,
+):
+    """Make a prediction based on recent MongoDB measurements.
+
+    Args:
+        window_steps: Number of historical readings to use for prediction.
+        prediction_horizon: Number of steps ahead to predict.
+        patient_id: Patient ID for data retrieval. Defaults to settings.OHIO_ID.
+        sample_interval: Minutes between CGM readings. Defaults to settings.SAMPLE_INTERVAL.
+            - Ohio dataset: 5 minutes (Guardian sensor)
+            - Simglucose: 3 minutes (Dexcom sensor)
+
+    Returns:
+        Tuple of (measurement_df, prediction_dict) or (None, None) on error.
+    """
     pid = patient_id or settings.OHIO_ID
+    interval = sample_interval or settings.SAMPLE_INTERVAL
 
     # Load model if not already loaded
     current_model = load_trained_model(pid, window_steps, prediction_horizon)
@@ -187,10 +206,15 @@ def mongo_prediction(window_steps, prediction_horizon, patient_id: str | None = 
 
     last_n = meas_list[-1 * window_steps :]
     prediction = predict_last_n(last_n, current_model, window_steps, prediction_horizon)
+
+    # Calculate prediction time using configurable sample interval
+    # prediction_horizon * sample_interval = minutes ahead
+    # E.g., horizon=6, interval=5 -> 30 min; horizon=6, interval=3 -> 18 min
+    prediction_minutes = prediction_horizon * interval
     prediction = {
         "prediction_origin_time": last_measurement.date_time,
         "prediction_time": last_measurement.date_time
-        + timedelta(minutes=prediction_horizon * 5),
+        + timedelta(minutes=prediction_minutes),
         "prediction_value": prediction,
     }
 
@@ -204,13 +228,15 @@ def handle_new_data(
     patient_id: str | None = None,
     window_steps: int | None = None,
     horizon_steps: int | None = None,
+    sample_interval: int | None = None,
 ):
     pid = patient_id or settings.OHIO_ID
     window = window_steps or settings.WINDOW_STEPS
     horizon = horizon_steps or settings.PREDICTION_HORIZON
+    interval = sample_interval or settings.SAMPLE_INTERVAL
 
     try:
-        measurement_df, prediction = mongo_prediction(window, horizon, pid)
+        measurement_df, prediction = mongo_prediction(window, horizon, pid, interval)
 
         logger.info("Inserting prediction in Database")
         pred_db = get_predictions_collection_for_patient(pid)
@@ -224,23 +250,39 @@ def run_prediction_watcher(
     patient_id: str | None = None,
     window_steps: int | None = None,
     horizon_steps: int | None = None,
+    sample_interval: int | None = None,
 ):
-    """Run the prediction watcher for a specific patient."""
+    """Run the prediction watcher for a specific patient.
+
+    Args:
+        patient_id: Patient ID to watch. Defaults to settings.OHIO_ID.
+        window_steps: Number of historical readings. Defaults to settings.WINDOW_STEPS.
+        horizon_steps: Steps ahead to predict. Defaults to settings.PREDICTION_HORIZON.
+        sample_interval: Minutes between CGM readings. Defaults to settings.SAMPLE_INTERVAL.
+            - Ohio dataset: 5 minutes (Guardian sensor)
+            - Simglucose: 3 minutes (Dexcom sensor)
+    """
     pid = patient_id or settings.OHIO_ID
     window = window_steps or settings.WINDOW_STEPS
     horizon = horizon_steps or settings.PREDICTION_HORIZON
+    interval = sample_interval or settings.SAMPLE_INTERVAL
     collection = get_collection_for_patient(pid)
 
     resume_token = None
     pipeline = [{"$match": {"operationType": "insert"}}]
 
+    # Calculate prediction time for logging
+    prediction_minutes = horizon * interval
+
     try:
         logger.info(
-            f"Starting Database Watch for patient {pid} (window={window}, horizon={horizon})"
+            f"Starting Database Watch for patient {pid} "
+            f"(window={window}, horizon={horizon}, interval={interval}min, "
+            f"predicting {prediction_minutes}min ahead)"
         )
         with collection.watch(pipeline) as stream:
             for _ in stream:
-                handle_new_data(pid, window, horizon)
+                handle_new_data(pid, window, horizon, interval)
                 resume_token = stream.resume_token
     except pymongo_errors.PyMongoError as e:
         if resume_token is None:
@@ -248,7 +290,7 @@ def run_prediction_watcher(
         else:
             with collection.watch(pipeline, resume_after=resume_token) as stream:
                 for _ in stream:
-                    handle_new_data(pid, window, horizon)
+                    handle_new_data(pid, window, horizon, interval)
 
 
 if __name__ == "__main__":

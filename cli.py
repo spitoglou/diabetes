@@ -55,11 +55,34 @@ def train_simple(
     horizon: int = typer.Option(
         6, "--horizon", "-h", help="Prediction horizon in steps"
     ),
+    interval: int = typer.Option(
+        None,
+        "--interval",
+        "-i",
+        help="CGM sample interval in minutes (5 for Ohio, 3 for simglucose)",
+    ),
 ):
-    """Run simple training script for a patient."""
+    """Run simple training script for a patient.
+
+    The sample interval determines prediction time: horizon * interval = minutes ahead.
+
+    Examples:
+      # Ohio data (5-min intervals): 6 steps * 5 min = 30 min prediction
+      uv run python cli.py train simple -p 559 -w 12 -h 6
+
+      # Simglucose data (3-min intervals): 6 steps * 3 min = 18 min prediction
+      uv run python cli.py train simple -p adult#001 -w 12 -h 6 -i 3
+    """
+    from config.settings import settings
+
+    sample_interval = interval or settings.SAMPLE_INTERVAL
+    prediction_minutes = horizon * sample_interval
+
+    typer.echo(f"Training model for patient {patient}")
     typer.echo(
-        f"Training model for patient {patient} (window={window}, horizon={horizon})"
+        f"  Window: {window} steps, Horizon: {horizon} steps, Interval: {sample_interval} min"
     )
+    typer.echo(f"  Predicting {prediction_minutes} minutes ahead")
 
     from src.helpers.experiment import Experiment
 
@@ -67,6 +90,7 @@ def train_simple(
         patient=patient,
         window=window,
         horizon=horizon,
+        min_per_measure=sample_interval,
         speed=3,
         enable_neptune=False,
     )
@@ -81,6 +105,12 @@ def train_full(
     horizon: int = typer.Option(
         6, "--horizon", "-h", help="Prediction horizon in steps"
     ),
+    interval: int = typer.Option(
+        None,
+        "--interval",
+        "-i",
+        help="CGM sample interval in minutes (5 for Ohio, 3 for simglucose)",
+    ),
     neptune: bool = typer.Option(
         True, "--neptune/--no-neptune", help="Enable Neptune logging"
     ),
@@ -88,8 +118,27 @@ def train_full(
         1, "--speed", "-s", help="Speed setting (1=full, 2=medium, 3=fast)"
     ),
 ):
-    """Run full experiment with all model comparisons."""
+    """Run full experiment with all model comparisons.
+
+    The sample interval determines prediction time: horizon * interval = minutes ahead.
+
+    Examples:
+      # Ohio data (5-min intervals)
+      uv run python cli.py train full -p 559 -w 12 -h 6
+
+      # Simglucose data (3-min intervals)
+      uv run python cli.py train full -p adult#001 -w 12 -h 6 -i 3 --no-neptune
+    """
+    from config.settings import settings
+
+    sample_interval = interval or settings.SAMPLE_INTERVAL
+    prediction_minutes = horizon * sample_interval
+
     typer.echo(f"Running full experiment for patient {patient}")
+    typer.echo(
+        f"  Window: {window} steps, Horizon: {horizon} steps, Interval: {sample_interval} min"
+    )
+    typer.echo(f"  Predicting {prediction_minutes} minutes ahead")
 
     from src.helpers.experiment import Experiment
 
@@ -97,6 +146,7 @@ def train_full(
         patient=patient,
         window=window,
         horizon=horizon,
+        min_per_measure=sample_interval,
         speed=speed,
         enable_neptune=neptune,
     )
@@ -310,21 +360,41 @@ def serve_predict(
         "-H",
         help="Prediction horizon in steps (default: from settings)",
     ),
+    interval: int = typer.Option(
+        None,
+        "--interval",
+        "-i",
+        help="CGM sample interval in minutes (5 for Ohio, 3 for simglucose)",
+    ),
 ):
-    """Start the prediction watcher (monitors MongoDB for new data)."""
+    """Start the prediction watcher (monitors MongoDB for new data).
+
+    The prediction time is calculated as: horizon_steps * sample_interval.
+
+    Examples:
+      # Ohio data (5-min intervals): 6 steps * 5 min = 30 min ahead
+      uv run python cli.py serve predict -p 559 -w 12 -H 6
+
+      # Simglucose data (3-min intervals): 6 steps * 3 min = 18 min ahead
+      uv run python cli.py serve predict -p adult#001 -w 12 -H 6 -i 3
+    """
     from config.settings import settings
 
     patient_id = patient or settings.OHIO_ID
     window_steps = window or settings.WINDOW_STEPS
     horizon_steps = horizon or settings.PREDICTION_HORIZON
+    sample_interval = interval or settings.SAMPLE_INTERVAL
 
+    prediction_minutes = horizon_steps * sample_interval
+    typer.echo(f"Starting prediction watcher for patient {patient_id}")
     typer.echo(
-        f"Starting prediction watcher for patient {patient_id} (window={window_steps}, horizon={horizon_steps})..."
+        f"  Window: {window_steps} steps, Horizon: {horizon_steps} steps, Interval: {sample_interval} min"
     )
+    typer.echo(f"  Predicting {prediction_minutes} minutes ahead")
 
     from scripts.serving.load_model_and_predict import run_prediction_watcher
 
-    run_prediction_watcher(patient_id, window_steps, horizon_steps)
+    run_prediction_watcher(patient_id, window_steps, horizon_steps, sample_interval)
 
 
 # =============================================================================

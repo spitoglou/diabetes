@@ -23,7 +23,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Diabetes blood glucose prediction system using machine learning. Predicts glucose levels 30 minutes ahead (6 steps × 5-minute intervals) using continuous glucose monitoring (CGM) data from the Ohio T1DM dataset.
+Diabetes blood glucose prediction system using machine learning. Predicts glucose levels ahead using continuous glucose monitoring (CGM) data. Prediction time depends on the CGM sensor's sample interval:
+
+| Data Source | Sensor | Sample Interval | 6-step prediction |
+|-------------|--------|-----------------|-------------------|
+| Ohio T1DM dataset | Medtronic Guardian | 5 minutes | 30 min ahead |
+| Simglucose | Dexcom G6 | 3 minutes | 18 min ahead |
+
+**Formula:** `prediction_time = horizon_steps × sample_interval`
 
 ## Key Commands
 

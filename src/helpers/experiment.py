@@ -68,12 +68,36 @@ def create_tsfresh_dataframe(p, show_plt=False):
 
 
 class Experiment:
+    """PyCaret-based experiment for blood glucose prediction model training.
+
+    Args:
+        patient: Patient ID (e.g., 559 for Ohio, "adult#001" for simglucose).
+        window: Number of historical readings to use as features.
+        horizon: Number of steps ahead to predict.
+        min_per_measure: Minutes between CGM readings. Defaults to settings.SAMPLE_INTERVAL.
+            - Ohio dataset: 5 minutes (Guardian sensor)
+            - Simglucose: 3 minutes (Dexcom sensor)
+        best_models_no: Number of top models to compare. Defaults to 3.
+        speed: PyCaret speed setting (1=full, 2=medium, 3=fast). Defaults to 3.
+        log_type: Logging destination ("standard", "file"). Defaults to "standard".
+        perform_gap_corrections: Whether to correct data gaps. Defaults to True.
+        minimal_features: Use minimal TSFresh features. Defaults to False.
+        enable_neptune: Enable Neptune ML tracking. Defaults to True.
+
+    Example:
+        # Train on Ohio data (5-min intervals, 30-min prediction)
+        exp = Experiment(patient=559, window=6, horizon=6)
+
+        # Train on simglucose data (3-min intervals, 18-min prediction)
+        exp = Experiment(patient="adult#001", window=6, horizon=6, min_per_measure=3)
+    """
+
     def __init__(
         self,
         patient: int,
         window: int,
         horizon: int,
-        min_per_measure: int = 5,
+        min_per_measure: int | None = None,
         best_models_no: int = 3,
         speed: int = 3,
         log_type: str = "standard",
@@ -87,11 +111,17 @@ class Experiment:
         elif log_type == "standard":
             logger.add(sys.stderr)
 
+        # Use settings.SAMPLE_INTERVAL as default if not specified
+        sample_interval = (
+            min_per_measure if min_per_measure is not None else settings.SAMPLE_INTERVAL
+        )
+
         self.patient = patient
         self.window = window
         self.horizon = horizon
-        self.win_min = window * min_per_measure
-        self.hor_min = horizon * min_per_measure
+        self.sample_interval = sample_interval
+        self.win_min = window * sample_interval
+        self.hor_min = horizon * sample_interval
         self.best_models_no = best_models_no
         self.speed = speed
         self.logger = logger
@@ -313,7 +343,7 @@ class Experiment:
         return (fig, res, rmse, rmadex)
 
     def predict_holdout(self, model=None):
-        legend = f"[{self.patient}]Holdout_W{(self.window * 5)}_H{(self.horizon * 5)}"
+        legend = f"[{self.patient}]Holdout_W{self.win_min}_H{self.hor_min}"
         (
             self.holdout_cega_fig,
             self.holdout_cega_res,
@@ -326,9 +356,7 @@ class Experiment:
         # self.neptune[f'holdout/images/{legend}'].upload(neptune.types.File.as_image(self.holdout_cega_fig))
 
     def predict_unseen(self, model=None):
-        legend = (
-            f"[{self.patient}]UnseenData_W{(self.window * 5)}_H{(self.horizon * 5)}"
-        )
+        legend = f"[{self.patient}]UnseenData_W{self.win_min}_H{self.hor_min}"
         # self.create_unseen_data_dataframe()
         (
             self.unseen_cega_fig,
