@@ -196,13 +196,17 @@ def mongo_prediction(window_steps, prediction_horizon, patient_id: str | None = 
     return measurement_df, prediction
 
 
-def handle_new_data(patient_id: str | None = None):
+def handle_new_data(
+    patient_id: str | None = None,
+    window_steps: int | None = None,
+    horizon_steps: int | None = None,
+):
     pid = patient_id or settings.OHIO_ID
+    window = window_steps or settings.WINDOW_STEPS
+    horizon = horizon_steps or settings.PREDICTION_HORIZON
 
     try:
-        measurement_df, prediction = mongo_prediction(
-            settings.WINDOW_STEPS, settings.PREDICTION_HORIZON, pid
-        )
+        measurement_df, prediction = mongo_prediction(window, horizon, pid)
 
         logger.info("Inserting prediction in Database")
         pred_db = get_predictions_collection_for_patient(pid)
@@ -212,19 +216,27 @@ def handle_new_data(patient_id: str | None = None):
         logger.error(e)
 
 
-def run_prediction_watcher(patient_id: str | None = None):
+def run_prediction_watcher(
+    patient_id: str | None = None,
+    window_steps: int | None = None,
+    horizon_steps: int | None = None,
+):
     """Run the prediction watcher for a specific patient."""
     pid = patient_id or settings.OHIO_ID
+    window = window_steps or settings.WINDOW_STEPS
+    horizon = horizon_steps or settings.PREDICTION_HORIZON
     collection = get_collection_for_patient(pid)
 
     resume_token = None
     pipeline = [{"$match": {"operationType": "insert"}}]
 
     try:
-        logger.info(f"Starting Database Watch for patient {pid}")
+        logger.info(
+            f"Starting Database Watch for patient {pid} (window={window}, horizon={horizon})"
+        )
         with collection.watch(pipeline) as stream:
             for _ in stream:
-                handle_new_data(pid)
+                handle_new_data(pid, window, horizon)
                 resume_token = stream.resume_token
     except pymongo_errors.PyMongoError as e:
         if resume_token is None:
@@ -232,7 +244,7 @@ def run_prediction_watcher(patient_id: str | None = None):
         else:
             with collection.watch(pipeline, resume_after=resume_token) as stream:
                 for _ in stream:
-                    handle_new_data(pid)
+                    handle_new_data(pid, window, horizon)
 
 
 if __name__ == "__main__":

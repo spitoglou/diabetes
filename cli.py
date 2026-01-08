@@ -153,16 +153,30 @@ def serve_predict(
     patient: str = typer.Option(
         None, "--patient", "-p", help="Patient ID (default: from settings)"
     ),
+    window: int = typer.Option(
+        None, "--window", "-w", help="Window size in steps (default: from settings)"
+    ),
+    horizon: int = typer.Option(
+        None,
+        "--horizon",
+        "-H",
+        help="Prediction horizon in steps (default: from settings)",
+    ),
 ):
     """Start the prediction watcher (monitors MongoDB for new data)."""
     from config.settings import settings
 
     patient_id = patient or settings.OHIO_ID
-    typer.echo(f"Starting prediction watcher for patient {patient_id}...")
+    window_steps = window or settings.WINDOW_STEPS
+    horizon_steps = horizon or settings.PREDICTION_HORIZON
+
+    typer.echo(
+        f"Starting prediction watcher for patient {patient_id} (window={window_steps}, horizon={horizon_steps})..."
+    )
 
     from scripts.serving.load_model_and_predict import run_prediction_watcher
 
-    run_prediction_watcher(patient_id)
+    run_prediction_watcher(patient_id, window_steps, horizon_steps)
 
 
 # =============================================================================
