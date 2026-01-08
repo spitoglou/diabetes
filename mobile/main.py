@@ -1,11 +1,12 @@
-import streamsync as ss
-import config.mongo_config as mg_conf
-from src.mongo import MongoDB
+from datetime import datetime
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime
+import streamsync as ss
 
+from config.settings import settings
+from src.mongo import MongoDB
 
 # This is a placeholder to get you started or refresh your memory.
 # Delete it or adapt it as necessary.
@@ -15,16 +16,14 @@ from datetime import datetime
 print("Application Start!!")
 
 mongo = MongoDB()
-db = mongo.client[mg_conf.MONGO_DATABASE]
-# TODO: Find a way to remove hardcoding via state?
+db = mongo.client[settings.MONGO_DATABASE]
 
 LOW = 70
 HIGH = 180
 
 
 def _retrieve_data(limit: int = 50):
-    # TODO: Find a way to remove hardcoding via state?
-    subject = "559"
+    subject = settings.OHIO_ID
     measurements_collection = db[f"measurements_{subject}"]
     predictions_collection = db[f"predictions_{subject}"]
 
@@ -64,7 +63,7 @@ def _create_graph(measurements, predictions):
         x="date_time",
         y="value",
         # ?title='Room Temp'
-    ).update_layout(yaxis={'range': [0, 450]})
+    ).update_layout(yaxis={"range": [0, 450]})
 
     temp_graph.add_traces(
         list(
@@ -72,9 +71,11 @@ def _create_graph(measurements, predictions):
                 predictions,
                 x="prediction_time",
                 y="prediction_value",
-                range_y=[0,450]
+                range_y=[0, 450],
                 # ?title='Room Temp'
-            ).update_traces(line_color='red').select_traces()
+            )
+            .update_traces(line_color="red")
+            .select_traces()
         )
     )
     # Just add lines
@@ -98,35 +99,38 @@ def _update_message(state):
     message = "+Even" if is_even else "-Odd"
     state["message"] = message
 
+
 def _get_last_measurement(measurement):
-    value = measurement['value']
+    value = measurement["value"]
     if LOW < value < HIGH:
-        marker = '+'
-        note = 'In Range'
+        marker = "+"
+        note = "In Range"
     else:
-        marker = '-'
+        marker = "-"
         if value <= LOW:
-            note = 'Below Range'
+            note = "Below Range"
         else:
-            note = 'Above Range'
-    dt = measurement['date_time']
-    
-    return value, dt, f'{marker}{note}'
+            note = "Above Range"
+    dt = measurement["date_time"]
+
+    return value, dt, f"{marker}{note}"
+
 
 def _get_last_prediction(prediction):
-    value = prediction['prediction_value']
+    value = prediction["prediction_value"]
     if LOW < value < HIGH:
-        marker = '+'
-        note = 'In Range'
+        marker = "+"
+        note = "In Range"
     else:
-        marker = '-'
+        marker = "-"
         if value <= LOW:
-            note = 'Below Range'
+            note = "Below Range"
         else:
-            note = 'Above Range'
-    dt = prediction['prediction_time']
-    
-    return value, dt, f'{marker}{note}'
+            note = "Above Range"
+    dt = prediction["prediction_time"]
+
+    return value, dt, f"{marker}{note}"
+
 
 def decrement(state):
     state["counter"] -= 1
@@ -153,7 +157,6 @@ def refresh(state):
     state["last_prediction"] = pr
     state["last_prediction_time"] = pr_dt
     state["last_prediction_note"] = pr_note
-    
 
 
 # Initialise the state

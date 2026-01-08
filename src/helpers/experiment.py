@@ -12,6 +12,7 @@ from pycaret.regression import (
     setup,
 )  # create_model,
 
+from config.settings import settings
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
 
 # ?from src.bgc_providers.aida_bgc_provider import AidaBgcProvider
@@ -115,26 +116,26 @@ class Experiment:
         }
 
         if self.enable_neptune:
-            self.neptune = neptune.init_run(
-                project="spitoglou/intermediate",
-                api_token=(
-                    "eyJhcGlfYWRkcmVzcyI6Imh0dHB"
-                    "zOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIj"
-                    "oiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV"
-                    "9rZXkiOiJlOWFkOTc3My0zZjQ3LTQ3MGMtOTQ2Zi0"
-                    "3NjA5ZDgzN2IyZTIifQ=="
-                ),
-            )
+            if not settings.neptune_enabled:
+                logger.warning(
+                    "Neptune tracking is enabled but NEPTUNE_PROJECT or NEPTUNE_API_TOKEN are not configured. Disabling Neptune."
+                )
+                self.enable_neptune = False
+            else:
+                self.neptune = neptune.init_run(
+                    project=settings.NEPTUNE_PROJECT,
+                    api_token=settings.NEPTUNE_API_TOKEN,
+                )
 
-            self.neptune["parameters"] = {
-                "train parameters": self.train_parameters,
-                "unseen data parameters": self.unseen_data_parameters,
-                "patient": patient,
-                "window": window,
-                "horizon": horizon,
-                "gap corrections": perform_gap_corrections,
-                "speed": speed,
-            }
+                self.neptune["parameters"] = {
+                    "train parameters": self.train_parameters,
+                    "unseen data parameters": self.unseen_data_parameters,
+                    "patient": patient,
+                    "window": window,
+                    "horizon": horizon,
+                    "gap corrections": perform_gap_corrections,
+                    "speed": speed,
+                }
 
     def create_dataframe(self, parameters: dict):
         return self.fix_names(
