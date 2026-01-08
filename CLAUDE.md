@@ -47,6 +47,10 @@ uv run python cli.py serve start     # Start FastAPI server
 uv run python cli.py serve client    # Stream CGM data to server
 uv run python cli.py serve predict   # Run prediction watcher
 
+# Serve commands with patient-specific options
+uv run python cli.py serve client -p 570 -v              # Stream for patient 570
+uv run python cli.py serve predict -p 570 -w 12 -H 6     # Predict with custom window/horizon
+
 # Run tests
 uv run pytest tests/
 

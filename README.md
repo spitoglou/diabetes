@@ -43,14 +43,28 @@ uv run python cli.py serve client    # Stream CGM data
 uv run python cli.py serve predict   # Run predictions
 ```
 
+### Serve Commands with Options
+
+The `serve client` and `serve predict` commands support patient-specific options:
+
+```bash
+# Stream data for a specific patient
+uv run python cli.py serve client --patient 570
+uv run python cli.py serve client -p 570 -v  # verbose mode
+
+# Run predictions with custom parameters
+uv run python cli.py serve predict --patient 570 --window 12 --horizon 6
+uv run python cli.py serve predict -p 570 -w 12 -H 6  # short form
+```
+
 ## Real-Time Prediction System
 
 Run in 3 separate terminals:
 
 ```bash
-uv run python cli.py serve start    # FastAPI server on port 8000
-uv run python cli.py serve client   # Stream test data
-uv run python cli.py serve predict  # Monitor and predict
+uv run python cli.py serve start                      # FastAPI server on port 8000
+uv run python cli.py serve client -p 559              # Stream test data for patient 559
+uv run python cli.py serve predict -p 559 -w 12 -H 6  # Monitor and predict
 ```
 
 Or using direct scripts:
