@@ -15,6 +15,7 @@
 
 - [arch-assessment-20260108](arch/arch-assessment-20260108.md) | Completed | Full architecture review: 16 refactorings, 4-phase migration plan, UV package management
 - **OpenSpec refactor-architecture** | Completed | 4-phase refactoring executed: dead code removal, config consolidation, CLI, type safety
+- **Release v0.2.0** | Completed | Architecture refactoring release with CLI, Pydantic Settings, 36 tests, docs
 
 <!-- Today's entries -->
 
@@ -30,9 +31,9 @@
 
 ## Quick Links
 
-- **Current Work:** Architecture refactoring complete (4 phases)
+- **Current Work:** v0.2.0 released
 - **Latest Architecture:** [arch-assessment-20260108](arch/arch-assessment-20260108.md)
-- **Implementation Status:** All 4 phases executed - dead code removed, config consolidated, CLI created, types added
+- **Latest Release:** v0.2.0 (2026-01-08) - Architecture refactoring complete
 
 ---
 
