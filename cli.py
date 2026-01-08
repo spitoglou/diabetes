@@ -149,32 +149,20 @@ def serve_client(
 
 
 @serve_app.command("predict")
-def serve_predict():
+def serve_predict(
+    patient: str = typer.Option(
+        None, "--patient", "-p", help="Patient ID (default: from settings)"
+    ),
+):
     """Start the prediction watcher (monitors MongoDB for new data)."""
-    typer.echo("Starting prediction watcher...")
+    from config.settings import settings
 
-    from loguru import logger
-    from pymongo import errors as pymongo_errors
+    patient_id = patient or settings.OHIO_ID
+    typer.echo(f"Starting prediction watcher for patient {patient_id}...")
 
-    from scripts.serving import load_model_and_predict
+    from scripts.serving.load_model_and_predict import run_prediction_watcher
 
-    resume_token = None
-    pipeline = [{"$match": {"operationType": "insert"}}]
-    mongo_collection = load_model_and_predict.mongo_collection
-
-    try:
-        logger.info("Starting Database Watch")
-        with mongo_collection.watch(pipeline) as stream:
-            for _ in stream:
-                load_model_and_predict.handle_new_data()
-                resume_token = stream.resume_token
-    except pymongo_errors.PyMongoError as e:
-        if resume_token is None:
-            logger.error(e)
-        else:
-            with mongo_collection.watch(pipeline, resume_after=resume_token) as stream:
-                for _ in stream:
-                    load_model_and_predict.handle_new_data()
+    run_prediction_watcher(patient_id)
 
 
 # =============================================================================

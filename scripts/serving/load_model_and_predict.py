@@ -19,26 +19,46 @@ from src.mongo import MongoDB
 
 mongo = MongoDB()
 db = mongo.client[settings.DATABASE]
+
+# Default collection for backward compatibility
 mongo_collection = db[f"measurements_{settings.OHIO_ID}"]
 
 # Initialize model as None - will be loaded when needed
 model = None
 model_path = None
+current_patient_id = settings.OHIO_ID
 
 
-def load_trained_model():
+def get_collection_for_patient(patient_id: str):
+    """Get MongoDB collection for a specific patient."""
+    return db[f"measurements_{patient_id}"]
+
+
+def get_predictions_collection_for_patient(patient_id: str):
+    """Get predictions MongoDB collection for a specific patient."""
+    return db[f"predictions_{patient_id}"]
+
+
+def load_trained_model(patient_id: str | None = None):
     """Load the trained model if available"""
-    global model, model_path
-    if model is not None:
+    global model, model_path, current_patient_id
+
+    pid = patient_id or settings.OHIO_ID
+
+    # Reload if patient changed
+    if model is not None and pid == current_patient_id:
         return model
+
+    current_patient_id = pid
+    model = None  # Reset to force reload
 
     try:
         model_files = glob.glob(
-            f"models/{settings.OHIO_ID}_{settings.WINDOW_STEPS}_{settings.PREDICTION_HORIZON}_1*.pkl"
+            f"models/{pid}_{settings.WINDOW_STEPS}_{settings.PREDICTION_HORIZON}_1*.pkl"
         )
         if not model_files:
             logger.warning(
-                f"No model files found matching pattern: models/{settings.OHIO_ID}_{settings.WINDOW_STEPS}_{settings.PREDICTION_HORIZON}_1*.pkl"
+                f"No model files found matching pattern: models/{pid}_{settings.WINDOW_STEPS}_{settings.PREDICTION_HORIZON}_1*.pkl"
             )
             return None
 
@@ -139,14 +159,17 @@ def create_measurements_list(timeseries_df):
     return meas_list, measurement
 
 
-def mongo_prediction(window_steps, prediction_horizon):
+def mongo_prediction(window_steps, prediction_horizon, patient_id: str | None = None):
+    pid = patient_id or settings.OHIO_ID
+
     # Load model if not already loaded
-    current_model = load_trained_model()
+    current_model = load_trained_model(pid)
     if current_model is None:
         logger.error("Cannot make prediction: model not available")
         return None, None
 
-    ts_df = retrieve_data(mongo_collection, 12)
+    collection = get_collection_for_patient(pid)
+    ts_df = retrieve_data(collection, 12)
     # reverse dataframe
     ts_df = ts_df[::-1].reset_index(drop=True)
     debug_print("Timeseries Dataframe", ts_df) if settings.DEBUG else ...
@@ -173,19 +196,43 @@ def mongo_prediction(window_steps, prediction_horizon):
     return measurement_df, prediction
 
 
-def handle_new_data():
-    # # mongo_predictions(model)
+def handle_new_data(patient_id: str | None = None):
+    pid = patient_id or settings.OHIO_ID
+
     try:
         measurement_df, prediction = mongo_prediction(
-            settings.WINDOW_STEPS, settings.PREDICTION_HORIZON
+            settings.WINDOW_STEPS, settings.PREDICTION_HORIZON, pid
         )
 
-        logger.info("Inserting predicition in Database")
-        pred_db = db[f"predictions_{settings.OHIO_ID}"]
+        logger.info("Inserting prediction in Database")
+        pred_db = get_predictions_collection_for_patient(pid)
         rec_id = pred_db.insert_one(prediction).inserted_id
         logger.success(rec_id)
     except Exception as e:
         logger.error(e)
+
+
+def run_prediction_watcher(patient_id: str | None = None):
+    """Run the prediction watcher for a specific patient."""
+    pid = patient_id or settings.OHIO_ID
+    collection = get_collection_for_patient(pid)
+
+    resume_token = None
+    pipeline = [{"$match": {"operationType": "insert"}}]
+
+    try:
+        logger.info(f"Starting Database Watch for patient {pid}")
+        with collection.watch(pipeline) as stream:
+            for _ in stream:
+                handle_new_data(pid)
+                resume_token = stream.resume_token
+    except pymongo_errors.PyMongoError as e:
+        if resume_token is None:
+            logger.error(e)
+        else:
+            with collection.watch(pipeline, resume_after=resume_token) as stream:
+                for _ in stream:
+                    handle_new_data(pid)
 
 
 if __name__ == "__main__":
