@@ -39,11 +39,17 @@ def get_predictions_collection_for_patient(patient_id: str):
     return db[f"predictions_{patient_id}"]
 
 
-def load_trained_model(patient_id: str | None = None):
+def load_trained_model(
+    patient_id: str | None = None,
+    window_steps: int | None = None,
+    horizon_steps: int | None = None,
+):
     """Load the trained model if available"""
     global model, model_path, current_patient_id
 
     pid = patient_id or settings.OHIO_ID
+    window = window_steps or settings.WINDOW_STEPS
+    horizon = horizon_steps or settings.PREDICTION_HORIZON
 
     # Reload if patient changed
     if model is not None and pid == current_patient_id:
@@ -53,12 +59,10 @@ def load_trained_model(patient_id: str | None = None):
     model = None  # Reset to force reload
 
     try:
-        model_files = glob.glob(
-            f"models/{pid}_{settings.WINDOW_STEPS}_{settings.PREDICTION_HORIZON}_1*.pkl"
-        )
+        model_files = glob.glob(f"models/{pid}_{window}_{horizon}_1*.pkl")
         if not model_files:
             logger.warning(
-                f"No model files found matching pattern: models/{pid}_{settings.WINDOW_STEPS}_{settings.PREDICTION_HORIZON}_1*.pkl"
+                f"No model files found matching pattern: models/{pid}_{window}_{horizon}_1*.pkl"
             )
             return None
 
@@ -163,7 +167,7 @@ def mongo_prediction(window_steps, prediction_horizon, patient_id: str | None = 
     pid = patient_id or settings.OHIO_ID
 
     # Load model if not already loaded
-    current_model = load_trained_model(pid)
+    current_model = load_trained_model(pid, window_steps, prediction_horizon)
     if current_model is None:
         logger.error("Cannot make prediction: model not available")
         return None, None
