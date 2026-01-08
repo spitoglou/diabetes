@@ -2,11 +2,27 @@
 
 This guide covers training blood glucose prediction models using the Diabetes BGC Prediction System.
 
+## Data Sources
+
+The system supports two data sources for training:
+
+| Data Source | Type | Sensor | Sample Interval | Patients |
+|-------------|------|--------|-----------------|----------|
+| **Ohio T1DM** | Real patient data | Medtronic Guardian | 5 minutes | 559, 563, 570, 575, 588, 591 |
+| **Simglucose** | Synthetic data | Dexcom G6 | 3 minutes | adult#001-010, adolescent#001-010, child#001-010 |
+
+**Prediction time formula:** `horizon_steps × sample_interval = minutes ahead`
+
+Examples:
+- Ohio (6 steps × 5 min) = 30 min prediction
+- Simglucose (6 steps × 3 min) = 18 min prediction
+
 ## Prerequisites
 
-1. **Ohio T1DM Dataset**: Place XML files in `data/ohio/`
-2. **MongoDB**: Running instance (optional, for real-time pipeline)
-3. **Dependencies**: Install with `uv sync`
+1. **Ohio T1DM Dataset** (for Ohio training): Place XML files in `data/ohio/`
+2. **Simglucose** (for synthetic training): Installed automatically with dependencies
+3. **MongoDB**: Running instance (optional, for real-time pipeline)
+4. **Dependencies**: Install with `uv sync`
 
 ## Quick Start
 
@@ -48,25 +64,66 @@ Options for `train full`:
 uv run python scripts/training/train_best_model_559.py
 ```
 
+### Train with Simglucose Synthetic Data
+
+Train models using synthetic CGM data from the simglucose library:
+
+```bash
+# Basic simglucose training
+uv run python cli.py train simple -p adult#001 -d simglucose
+
+# Full experiment without Neptune
+uv run python cli.py train full -p adult#001 -d simglucose --no-neptune
+
+# Custom simulation duration (default: 14 days training, 7 days test)
+uv run python cli.py train simple -p adult#001 -d simglucose --simulation-days 21
+```
+
+Available virtual patients:
+- `adult#001` through `adult#010`
+- `adolescent#001` through `adolescent#010`
+- `child#001` through `child#010`
+
+Simglucose uses basal-bolus insulin control by default for realistic glucose patterns.
+
 ## Training Pipeline
 
 ### 1. Data Loading
 
-The `OhioBgcProvider` loads and parses Ohio T1DM XML files:
+Use the provider factory to load data from either source:
 
 ```python
-from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+from src.bgc_providers.factory import create_provider
 
-provider = OhioBgcProvider(ohio_id="559")
+# Ohio data (real patients)
+provider = create_provider("ohio", "559")
 df = provider.tsfresh_dataframe()
+
+# Simglucose data (synthetic)
+provider = create_provider("simglucose", "adult#001")
+df = provider.tsfresh_dataframe(simulation_days=14)
 ```
 
-Output DataFrame format:
+Or use providers directly:
+
+```python
+# Ohio provider
+from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
+provider = OhioBgcProvider(ohio_no="559")
+
+# Simglucose provider
+from src.bgc_providers.simglucose_provider import SimglucoseProvider
+provider = SimglucoseProvider(patient_name="adult#001", insulin_mode="basal-bolus")
+```
+
+Output DataFrame format (same for both providers):
 | Column | Type | Description |
 |--------|------|-------------|
-| `id` | int | Window identifier |
-| `time` | datetime | Measurement timestamp |
-| `bg_value` | float | Blood glucose (mg/dL) |
+| `date_time` | datetime | Measurement timestamp |
+| `bg_value` | int | Blood glucose (mg/dL) |
+| `id` | str | Patient identifier |
+| `time` | float | Hours since start |
+| `part_of_day` | str | morning/afternoon/evening/night |
 
 ### 2. Feature Extraction
 
@@ -177,16 +234,24 @@ MINIMAL_FEATURES = False  # Use full ~800 features
 
 Models are saved with this naming pattern:
 
+**Ohio models:**
 ```
-{patient}_{window}_{horizon}_best_{ModelName}_{id}.pkl
+{patient}_{window}_{horizon}_{rank}_{ModelName}_{uuid}.pkl
 ```
+Example: `559_12_6_1_ExtraTreesRegressor_be523b44.pkl`
 
-Example: `559_12_6_best_ExtraTreesRegressor_be523b44.pkl`
+**Simglucose models:**
+```
+sim_{patient}_{window}_{horizon}_{rank}_{ModelName}_{uuid}.pkl
+```
+Example: `sim_adult#001_6_6_1_ExtraTreesRegressor_a1b2c3d4.pkl`
 
 Components:
-- `559`: Patient ID
-- `12`: Window size (12 steps = 1 hour history)
-- `6`: Prediction horizon (6 steps = 30 min ahead)
+- `sim_`: Prefix for simglucose models (distinguishes from Ohio)
+- `559` or `adult#001`: Patient ID
+- `12`: Window size (12 steps)
+- `6`: Prediction horizon (6 steps)
+- `1`: Model rank (1 = best)
 - `ExtraTreesRegressor`: Model algorithm
 - `be523b44`: Unique identifier
 

@@ -53,12 +53,19 @@ uv run python cli.py serve predict            # Run predictions
 ### Train Commands with Options
 
 ```bash
-# Simple training with custom parameters
+# Simple training with custom parameters (Ohio data - default)
 uv run python cli.py train simple --patient 559 --window 12 --horizon 6
 uv run python cli.py train simple -p 559 -w 12 -h 6  # short form
 
 # Full experiment with all options
 uv run python cli.py train full -p 559 -w 12 -h 6 --no-neptune --speed 2
+
+# Train on simglucose synthetic data
+uv run python cli.py train simple -p adult#001 -d simglucose
+uv run python cli.py train full -p adult#001 -d simglucose --no-neptune
+
+# Simglucose with custom simulation duration (default: 14 days)
+uv run python cli.py train simple -p adult#001 -d simglucose --simulation-days 21
 ```
 
 ### Serve Commands with Options

@@ -43,13 +43,34 @@ def load_trained_model(
     patient_id: str | None = None,
     window_steps: int | None = None,
     horizon_steps: int | None = None,
+    data_source: str | None = None,
 ):
-    """Load the trained model if available"""
+    """Load the trained model if available.
+
+    Args:
+        patient_id: Patient identifier (e.g., "559" for Ohio, "adult#001" for simglucose).
+        window_steps: Number of historical readings used as features.
+        horizon_steps: Number of steps ahead to predict.
+        data_source: Data source ("ohio" or "simglucose"). If None, auto-detects
+                    based on patient_id format (# in name = simglucose).
+
+    Returns:
+        Loaded model or None if not found.
+
+    Model naming convention:
+        - Ohio: models/{patient}_{window}_{horizon}_1*.pkl
+        - Simglucose: models/sim_{patient}_{window}_{horizon}_1*.pkl
+    """
     global model, model_path, current_patient_id
 
     pid = patient_id or settings.OHIO_ID
     window = window_steps or settings.WINDOW_STEPS
     horizon = horizon_steps or settings.PREDICTION_HORIZON
+
+    # Auto-detect data source from patient ID format if not specified
+    if data_source is None:
+        # Simglucose patients contain '#' (e.g., adult#001)
+        data_source = "simglucose" if "#" in str(pid) else "ohio"
 
     # Reload if patient changed
     if model is not None and pid == current_patient_id:
@@ -59,11 +80,24 @@ def load_trained_model(
     model = None  # Reset to force reload
 
     try:
-        model_files = glob.glob(f"models/{pid}_{window}_{horizon}_1*.pkl")
+        # Build search pattern based on data source
+        if data_source == "simglucose":
+            pattern = f"models/sim_{pid}_{window}_{horizon}_1*.pkl"
+        else:
+            pattern = f"models/{pid}_{window}_{horizon}_1*.pkl"
+
+        model_files = glob.glob(pattern)
+
+        # Fall back to old naming convention if no match found
+        if not model_files and data_source == "simglucose":
+            # Try without sim_ prefix for backward compatibility
+            fallback_pattern = f"models/{pid}_{window}_{horizon}_1*.pkl"
+            model_files = glob.glob(fallback_pattern)
+            if model_files:
+                logger.info(f"Found model with legacy naming: {fallback_pattern}")
+
         if not model_files:
-            logger.warning(
-                f"No model files found matching pattern: models/{pid}_{window}_{horizon}_1*.pkl"
-            )
+            logger.warning(f"No model files found matching pattern: {pattern}")
             return None
 
         model_file = model_files[0]

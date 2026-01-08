@@ -112,8 +112,27 @@ uv sync                             # Sync after pulling changes
 ## Architecture
 
 ### ML Pipeline
+
+Supports two data sources for training:
+
 ```
+# Ohio (real patient data)
 Ohio Dataset (XML) → OhioBgcProvider → TsfreshFeaturizer → PyCaret Experiment → Trained Model (.pkl)
+
+# Simglucose (synthetic data)
+Simglucose Simulation → SimglucoseProvider → TsfreshFeaturizer → PyCaret Experiment → Trained Model (.pkl)
+```
+
+**Training commands:**
+```bash
+# Ohio data (default)
+uv run python cli.py train simple -p 559 -w 12 -h 6
+
+# Simglucose synthetic data
+uv run python cli.py train simple -p adult#001 -w 12 -h 6 -d simglucose
+
+# Simglucose with custom simulation duration (default: 14 days)
+uv run python cli.py train full -p adult#001 -d simglucose --simulation-days 21 --no-neptune
 ```
 
 ### Real-Time Pipeline
@@ -129,7 +148,9 @@ CGM Device → client.py (FHIR) → server.py (FastAPI) → MongoDB → load_mod
 | Settings | `config/settings.py` | Pydantic configuration management |
 | Experiment class | `src/helpers/experiment.py` | PyCaret model training orchestration |
 | TsfreshFeaturizer | `src/featurizers/tsfresh.py` | Time-series feature extraction (~800 features) |
+| Provider Factory | `src/bgc_providers/factory.py` | Creates Ohio or Simglucose providers |
 | OhioBgcProvider | `src/bgc_providers/ohio_bgc_provider.py` | Ohio dataset XML parser |
+| SimglucoseProvider | `src/bgc_providers/simglucose_provider.py` | Synthetic CGM data from UVA/Padova model |
 | CEGA/MADEX | `src/helpers/diabetes/` | Diabetes-specific evaluation metrics |
 | MongoDB wrapper | `src/mongo.py` | Database connection management |
 | Logging | `src/helpers/logging.py` | Centralized logging configuration |
@@ -174,9 +195,13 @@ Use `uv run python cli.py info` to verify current configuration.
 
 ## Model Naming Convention
 
-`{patient}_{window}_{horizon}_best_{ModelName}_{id}.pkl`
+**Ohio models:** `{patient}_{window}_{horizon}_{rank}_{ModelName}_{uuid}.pkl`
 
-Example: `559_12_6_best_ExtraTreesRegressor_be523b44.pkl`
+**Simglucose models:** `sim_{patient}_{window}_{horizon}_{rank}_{ModelName}_{uuid}.pkl`
+
+Examples:
+- Ohio: `559_12_6_1_ExtraTreesRegressor_be523b44.pkl`
+- Simglucose: `sim_adult#001_6_6_1_ExtraTreesRegressor_a1b2c3d4.pkl`
 
 ## Diabetes Metrics
 

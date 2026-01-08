@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-01-08
+
+### Added
+- **Simglucose training support** - Train ML models using synthetic data from simglucose library
+  - `--data-source` / `-d` option for `train simple` and `train full` commands
+  - `--simulation-days` option to configure synthetic data generation length
+  - Support for all 30 simglucose virtual patients (adult#001-010, adolescent#001-010, child#001-010)
+- **SimglucoseProvider.tsfresh_dataframe()** - Generate training-compatible DataFrames from simglucose
+  - Realistic basal-bolus insulin with meal responses
+  - BG values in physiological range (~80-250 mg/dL)
+  - 3-minute sampling interval (Dexcom sensor)
+- **Provider factory** (`src/bgc_providers/factory.py`) - Unified provider creation
+  - `create_provider()` function abstracts Ohio vs simglucose provider creation
+  - `get_sample_interval()` returns correct interval per data source
+- **Auto-detection of sample interval** - Experiment class automatically sets interval based on data source
+  - Ohio: 5-minute intervals (Guardian sensor)
+  - Simglucose: 3-minute intervals (Dexcom sensor)
+- **Model/dataset naming with data source prefix**
+  - Simglucose models: `sim_{patient}_{window}_{horizon}_{rank}_{Model}_{uuid}.pkl`
+  - Ohio models: unchanged for backward compatibility
+- **load_trained_model() data source support** - Auto-detects simglucose from patient ID containing `#`
+- **26 new tests** for simglucose training pipeline
+  - Unit tests for provider, factory, experiment, naming
+  - Integration tests for full training pipeline
+- **OpenSpec spec** `training-data-source` with 6 requirements
+
+### Changed
+- **Experiment class** now accepts `data_source` parameter (default: "ohio")
+- **Documentation** updated with simglucose training examples in CLAUDE.md, README.md, training.md, architecture.md
+
 ## [0.4.1] - 2026-01-08
 
 ### Added

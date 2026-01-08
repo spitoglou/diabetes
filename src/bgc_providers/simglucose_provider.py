@@ -23,6 +23,7 @@ from simglucose.simulation.env import T1DSimEnv
 from simglucose.simulation.scenario import CustomScenario
 
 from config.settings import settings
+from src.helpers.misc import get_part_of_day
 
 # Type alias for insulin modes
 InsulinMode = Literal["none", "basal", "basal-bolus"]
@@ -377,7 +378,13 @@ class ConfigurableController(Controller):
 
             # Only calculate meal bolus if not already pre-bolused
             if meal_hour is None or meal_hour not in self._pre_bolused_meals:
-                meal_carbs = meal * sample_time  # Convert g/min to total g
+                # Check if meal is in g/min (streaming) or total grams (training)
+                # meal_in_grams=True means meal is already total grams (from scenario)
+                meal_in_grams = kwargs.get("meal_in_grams", False)
+                if meal_in_grams:
+                    meal_carbs = meal
+                else:
+                    meal_carbs = meal * sample_time  # Convert g/min to total g
                 meal_bolus = meal_carbs / self._carb_ratio
 
                 # Add correction if glucose above threshold (BBController behavior)
@@ -672,14 +679,177 @@ class SimglucoseProvider:
 
             yield values
 
-    def get_glycose_levels(self, start: int = 0) -> Any:
-        """Not implemented for simglucose provider (live simulation only)."""
-        raise NotImplementedError(
-            "SimglucoseProvider generates live data, not historical levels"
+    def get_glycose_levels(self, start: int = 0) -> list[dict]:
+        """Generate glucose level data from simulation.
+
+        Runs a complete simulation and returns glucose readings as a list
+        of dictionaries, similar to OhioBgcProvider's XML-based output.
+
+        Args:
+            start: Number of readings to skip from the start.
+
+        Returns:
+            List of dicts with 'ts' (timestamp string) and 'value' (glucose).
+        """
+        if (
+            not hasattr(self, "_cached_glucose_levels")
+            or self._cached_glucose_levels is None
+        ):
+            self._generate_training_data()
+
+        levels = self._cached_glucose_levels
+        if start > 0:
+            levels = levels[start:]
+        return levels
+
+    def _generate_training_data(self, simulation_days: int = 14) -> None:
+        """Generate and cache training data from simulation.
+
+        Args:
+            simulation_days: Number of days to simulate. Default 14 days.
+        """
+        from datetime import timedelta
+
+        logger.info(f"Generating {simulation_days} days of simglucose training data...")
+        logger.info(f"Patient: {self.patient_name}, Insulin mode: {self.insulin_mode}")
+
+        # Calculate steps: 3-minute intervals, 24 hours, N days
+        steps_per_day = 24 * 60 // 3  # 480 steps per day (3-min intervals)
+        total_steps = steps_per_day * simulation_days
+
+        # Create simulation environment starting from midnight
+        start_time = datetime(2025, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        self._env = self._create_env(start_time)
+        self._controller = self._create_controller()
+
+        # Run simulation
+        self._cached_glucose_levels = []
+        self._cached_dataframe_rows = []
+
+        # env.reset() returns a Step namedtuple; extract the observation
+        initial_step = self._env.reset()
+        observation = initial_step.observation
+        reward = 0
+        done = False
+        current_time = start_time
+        base_time = start_time
+
+        for step_idx in range(total_steps):
+            # Get meal from scenario (scenario_action is a namedtuple with .meal attribute)
+            scenario_action = self._env.scenario.get_action(current_time)
+            meal_value = scenario_action.meal if hasattr(scenario_action, "meal") else 0
+
+            # Get action from controller
+            # meal_in_grams=True because scenario returns total grams, not g/min
+            action = self._get_action(
+                observation,
+                reward,
+                done,
+                meal=meal_value,
+                meal_in_grams=True,
+                patient_name=self.patient_name,
+                sample_time=3,
+                time=current_time,
+            )
+
+            # Step simulation
+            observation, reward, done, info = self._env.step(action)
+
+            # Get CGM value
+            cgm_value = observation.CGM
+
+            # Store in get_glycose_levels format
+            ts_string = current_time.strftime("%d-%m-%Y %H:%M:%S")
+            self._cached_glucose_levels.append(
+                {
+                    "ts": ts_string,
+                    "value": cgm_value,
+                }
+            )
+
+            # Store in tsfresh_dataframe format
+            time_of_day = current_time.time()
+            mock_date = current_time.date()
+            part_of_day = get_part_of_day(time_of_day.hour)
+            delta = current_time - base_time
+            array_time = abs(delta.days) * 24 + round(delta.seconds / 3600, 2)
+
+            self._cached_dataframe_rows.append(
+                [
+                    current_time,
+                    mock_date,
+                    time_of_day,
+                    part_of_day,
+                    array_time,
+                    int(round(cgm_value)),
+                ]
+            )
+
+            # Advance time by 3 minutes
+            current_time = current_time + timedelta(minutes=3)
+
+            # Progress logging
+            if (step_idx + 1) % (steps_per_day * 7) == 0:
+                days_done = (step_idx + 1) // steps_per_day
+                logger.info(f"Progress: {days_done}/{simulation_days} days simulated")
+
+        logger.success(f"Generated {len(self._cached_glucose_levels)} glucose readings")
+
+    def tsfresh_dataframe(
+        self, truncate: int = 0, simulation_days: int = 14, show_plt: bool = False
+    ) -> pd.DataFrame:
+        """Create a DataFrame suitable for tsfresh feature extraction.
+
+        Generates glucose data from simglucose simulation and formats it
+        to match OhioBgcProvider's output schema for compatibility with
+        the existing training pipeline.
+
+        Args:
+            truncate: Number of rows to keep (0 = no truncation).
+            simulation_days: Number of days to simulate (default: 14).
+            show_plt: Whether to display a plot of the data.
+
+        Returns:
+            DataFrame with columns: date_time, mock_date, time_of_day,
+            part_of_day, time, bg_value, id
+
+        Note:
+            Uses 3-minute intervals (Dexcom sensor) vs Ohio's 5-minute intervals.
+            14 days generates ~6,720 readings.
+        """
+        import matplotlib.pyplot as plt
+
+        # Generate data if not cached or if different simulation_days requested
+        if (
+            not hasattr(self, "_cached_dataframe_rows")
+            or self._cached_dataframe_rows is None
+            or len(self._cached_dataframe_rows) < simulation_days * 480 - 10
+        ):
+            self._generate_training_data(simulation_days)
+
+        # Create DataFrame
+        df = pd.DataFrame(
+            data=self._cached_dataframe_rows,
+            columns=[
+                "date_time",
+                "mock_date",
+                "time_of_day",
+                "part_of_day",
+                "time",
+                "bg_value",
+            ],
         )
 
-    def tsfresh_dataframe(self, truncate: int = 0) -> pd.DataFrame:
-        """Not implemented for simglucose provider (live simulation only)."""
-        raise NotImplementedError(
-            "SimglucoseProvider generates live data, not batch dataframes"
-        )
+        if truncate:
+            df = df[:truncate]
+
+        df["id"] = self.patient_name
+
+        if show_plt:
+            df.plot("time", "bg_value")
+            plt.title(f"Simglucose: {self.patient_name} ({self.insulin_mode})")
+            plt.xlabel("Time (hours)")
+            plt.ylabel("Blood Glucose (mg/dL)")
+            plt.show()
+
+        return df

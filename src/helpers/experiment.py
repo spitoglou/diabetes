@@ -13,9 +13,8 @@ from pycaret.regression import (
 )  # create_model,
 
 from config.settings import settings
+from src.bgc_providers.factory import DataSource, create_provider, get_sample_interval
 from src.bgc_providers.ohio_bgc_provider import OhioBgcProvider
-
-# ?from src.bgc_providers.aida_bgc_provider import AidaBgcProvider
 from src.featurizers.tsfresh import TsfreshFeaturizer
 from src.helpers.dataframe import read_df, save_df
 
@@ -33,8 +32,16 @@ from src.helpers.diabetes.madex import madex, mean_adjusted_exponent_error, rmad
 
 
 def create_ds_name(parameters):
+    """Create dataset filename based on parameters.
+
+    For Ohio data: dataframes/{patient}_{scope}_{size}_{window}_{horizon}.pkl
+    For simglucose: dataframes/sim_{patient}_{scope}_{size}_{window}_{horizon}.pkl
+    """
+    data_source = parameters.get("data_source", "ohio")
+    prefix = "sim_" if data_source == "simglucose" else ""
+
     ds_name = (
-        f"dataframes/{parameters['ohio_no']}_{parameters['scope']}_{parameters['train_ds_size']}"
+        f"dataframes/{prefix}{parameters['patient']}_{parameters['scope']}_{parameters['train_ds_size']}"
         f"_{parameters['window_size']}_{parameters['prediction_horizon']}.pkl"
     )
     logger.info(ds_name)
@@ -42,9 +49,37 @@ def create_ds_name(parameters):
 
 
 def timeseries_dataframe(p, show_plt=False):
-    provider = OhioBgcProvider(scope=p["scope"], ohio_no=p["ohio_no"])
+    """Get time series dataframe from the appropriate provider.
+
+    Args:
+        p: Parameters dict with 'data_source', 'patient', 'scope', 'train_ds_size',
+           and optionally 'simulation_days' for simglucose.
+        show_plt: Whether to display a plot of the data.
+
+    Returns:
+        DataFrame with time series data formatted for tsfresh.
+    """
+    data_source = p.get("data_source", "ohio")
     logger.info(p)
-    return provider.tsfresh_dataframe(truncate=p["train_ds_size"], show_plt=show_plt)
+
+    if data_source == "ohio":
+        provider = OhioBgcProvider(scope=p["scope"], ohio_no=p["patient"])
+        return provider.tsfresh_dataframe(
+            truncate=p["train_ds_size"], show_plt=show_plt
+        )
+    else:
+        # Use factory for simglucose
+        simulation_days = p.get("simulation_days", 14)
+        provider = create_provider(
+            data_source=data_source,
+            patient=p["patient"],
+            simulation_days=simulation_days,
+        )
+        return provider.tsfresh_dataframe(
+            truncate=p["train_ds_size"],
+            simulation_days=simulation_days,
+            show_plt=show_plt,
+        )
 
 
 def create_tsfresh_dataframe(p, show_plt=False):
@@ -74,9 +109,11 @@ class Experiment:
         patient: Patient ID (e.g., 559 for Ohio, "adult#001" for simglucose).
         window: Number of historical readings to use as features.
         horizon: Number of steps ahead to predict.
-        min_per_measure: Minutes between CGM readings. Defaults to settings.SAMPLE_INTERVAL.
+        data_source: Data source ("ohio" or "simglucose"). Defaults to "ohio".
+        min_per_measure: Minutes between CGM readings. If None, auto-detected from data_source:
             - Ohio dataset: 5 minutes (Guardian sensor)
             - Simglucose: 3 minutes (Dexcom sensor)
+        simulation_days: Days to simulate for simglucose (default: 14). Ignored for Ohio.
         best_models_no: Number of top models to compare. Defaults to 3.
         speed: PyCaret speed setting (1=full, 2=medium, 3=fast). Defaults to 3.
         log_type: Logging destination ("standard", "file"). Defaults to "standard".
@@ -89,15 +126,20 @@ class Experiment:
         exp = Experiment(patient=559, window=6, horizon=6)
 
         # Train on simglucose data (3-min intervals, 18-min prediction)
-        exp = Experiment(patient="adult#001", window=6, horizon=6, min_per_measure=3)
+        exp = Experiment(
+            patient="adult#001", window=6, horizon=6,
+            data_source="simglucose"
+        )
     """
 
     def __init__(
         self,
-        patient: int,
+        patient: int | str,
         window: int,
         horizon: int,
+        data_source: DataSource = "ohio",
         min_per_measure: int | None = None,
+        simulation_days: int = 14,
         best_models_no: int = 3,
         speed: int = 3,
         log_type: str = "standard",
@@ -111,14 +153,17 @@ class Experiment:
         elif log_type == "standard":
             logger.add(sys.stderr)
 
-        # Use settings.SAMPLE_INTERVAL as default if not specified
-        sample_interval = (
-            min_per_measure if min_per_measure is not None else settings.SAMPLE_INTERVAL
-        )
+        # Auto-detect sample interval from data source if not specified
+        if min_per_measure is not None:
+            sample_interval = min_per_measure
+        else:
+            sample_interval = get_sample_interval(data_source)
 
         self.patient = patient
         self.window = window
         self.horizon = horizon
+        self.data_source = data_source
+        self.simulation_days = simulation_days
         self.sample_interval = sample_interval
         self.win_min = window * sample_interval
         self.hor_min = horizon * sample_interval
@@ -127,22 +172,36 @@ class Experiment:
         self.logger = logger
         self.perform_gap_corrections = perform_gap_corrections
         self.enable_neptune = enable_neptune
+
+        # For simglucose, use time-period based train/test split:
+        # Days 1-14 for training, days 15-21 for testing (per design decision)
+        if data_source == "simglucose":
+            train_days = simulation_days  # e.g., 14 days
+            test_days = simulation_days // 2  # e.g., 7 days for testing
+        else:
+            train_days = 0  # Not used for Ohio
+            test_days = 0
+
         self.train_parameters = {
-            "ohio_no": patient,
+            "data_source": data_source,
+            "patient": patient,
             "scope": "train",
             "train_ds_size": 0,
             "window_size": window,
             "prediction_horizon": horizon,
             "minimal_features": minimal_features,
+            "simulation_days": train_days if data_source == "simglucose" else 0,
         }
 
         self.unseen_data_parameters = {
-            "ohio_no": patient,
+            "data_source": data_source,
+            "patient": patient,
             "scope": "test",
             "train_ds_size": 0,
             "window_size": window,
             "prediction_horizon": horizon,
             "minimal_features": minimal_features,
+            "simulation_days": test_days if data_source == "simglucose" else 0,
         }
 
         if self.enable_neptune:
@@ -160,9 +219,11 @@ class Experiment:
                 self.neptune["parameters"] = {
                     "train parameters": self.train_parameters,
                     "unseen data parameters": self.unseen_data_parameters,
+                    "data_source": data_source,
                     "patient": patient,
                     "window": window,
                     "horizon": horizon,
+                    "sample_interval": sample_interval,
                     "gap corrections": perform_gap_corrections,
                     "speed": speed,
                 }
@@ -310,14 +371,24 @@ class Experiment:
         self.models_comparison_df = pull()
 
     def log_best_models(self):
+        """Save trained models with appropriate naming convention.
+
+        Model naming:
+        - Ohio: {patient}_{window}_{horizon}_{rank}_{ModelName}_{uuid}.pkl
+        - Simglucose: sim_{patient}_{window}_{horizon}_{rank}_{ModelName}_{uuid}.pkl
+        """
         import uuid
 
+        # Add sim_ prefix for simglucose models
+        prefix = "sim_" if self.data_source == "simglucose" else ""
+
         for index, model in enumerate(self.best_models):
-            save_model(
-                model,
-                f"models/{self.patient}_{self.window}_{self.horizon}_{index + 1}_{self.get_model_name(model.__str__())}_{uuid.uuid4()}",
+            model_path = (
+                f"models/{prefix}{self.patient}_{self.window}_{self.horizon}"
+                f"_{index + 1}_{self.get_model_name(model.__str__())}_{uuid.uuid4()}"
             )
-            logger.info(f"Model {(index + 1)}:")
+            save_model(model, model_path)
+            logger.info(f"Model {(index + 1)}: {model_path}")
             logger.info(model)
 
     def calculate_prediction(self, model, custom_data=None, legend=""):

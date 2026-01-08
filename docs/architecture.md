@@ -49,10 +49,23 @@ The system predicts blood glucose levels ahead using continuous glucose monitori
 
 ### 1. Data Providers
 
+**Provider Factory** (`src/bgc_providers/factory.py`)
+- Unified interface to create data providers
+- `create_provider(data_source, patient)` - returns appropriate provider
+- `get_sample_interval(data_source)` - returns sensor interval (5 or 3 min)
+
 **OhioBgcProvider** (`src/bgc_providers/ohio_bgc_provider.py`)
 - Parses Ohio T1DM XML dataset files
 - Provides streaming simulation of CGM readings
 - Converts data to tsfresh-compatible DataFrames
+- 5-minute sample interval (Medtronic Guardian sensor)
+
+**SimglucoseProvider** (`src/bgc_providers/simglucose_provider.py`)
+- Generates synthetic CGM data using UVA/Padova T1D model
+- Configurable insulin modes: none, basal, basal-bolus
+- `tsfresh_dataframe()` for training data generation
+- 3-minute sample interval (Dexcom G6 sensor)
+- 30 virtual patients: adult#001-010, adolescent#001-010, child#001-010
 
 ### 2. Feature Extraction
 
@@ -97,10 +110,17 @@ The system predicts blood glucose levels ahead using continuous glucose monitori
 ### Training Pipeline
 
 ```
-1. Ohio XML Data → OhioBgcProvider.tsfresh_dataframe()
+Ohio Data:
+1. Ohio XML → OhioBgcProvider.tsfresh_dataframe()
 2. Raw DataFrame → TsfreshFeaturizer.create_labeled_dataframe()
 3. Feature DataFrame → Experiment.setup_regressor()
 4. PyCaret → Model comparison → Best model saved (.pkl)
+
+Simglucose Data:
+1. SimglucoseProvider(patient, insulin_mode) → tsfresh_dataframe(simulation_days)
+2. Raw DataFrame → TsfreshFeaturizer.create_labeled_dataframe()
+3. Feature DataFrame → Experiment.setup_regressor()
+4. PyCaret → Model comparison → Best model saved (sim_*.pkl)
 ```
 
 ### Inference Pipeline

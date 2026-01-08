@@ -55,34 +55,55 @@ def train_simple(
     horizon: int = typer.Option(
         6, "--horizon", "-h", help="Prediction horizon in steps"
     ),
+    data_source: str = typer.Option(
+        "ohio",
+        "--data-source",
+        "-d",
+        help="Data source: ohio (real patient) or simglucose (synthetic)",
+    ),
     interval: int = typer.Option(
         None,
         "--interval",
         "-i",
-        help="CGM sample interval in minutes (5 for Ohio, 3 for simglucose)",
+        help="CGM sample interval in minutes. Auto-detected if not set (ohio=5, simglucose=3)",
+    ),
+    simulation_days: int = typer.Option(
+        14,
+        "--simulation-days",
+        help="Days to simulate for simglucose training (default: 14). Ignored for Ohio.",
     ),
 ):
     """Run simple training script for a patient.
 
     The sample interval determines prediction time: horizon * interval = minutes ahead.
+    For simglucose, the interval is auto-detected as 3 minutes (Dexcom sensor).
 
     Examples:
       # Ohio data (5-min intervals): 6 steps * 5 min = 30 min prediction
       uv run python cli.py train simple -p 559 -w 12 -h 6
 
       # Simglucose data (3-min intervals): 6 steps * 3 min = 18 min prediction
-      uv run python cli.py train simple -p adult#001 -w 12 -h 6 -i 3
-    """
-    from config.settings import settings
+      uv run python cli.py train simple -p adult#001 -w 12 -h 6 -d simglucose
 
-    sample_interval = interval or settings.SAMPLE_INTERVAL
+      # Simglucose with custom simulation duration
+      uv run python cli.py train simple -p adult#001 -d simglucose --simulation-days 21
+    """
+    from src.bgc_providers.factory import get_sample_interval
+
+    # Auto-detect interval from data source if not specified
+    sample_interval = (
+        interval if interval is not None else get_sample_interval(data_source)
+    )
     prediction_minutes = horizon * sample_interval
 
     typer.echo(f"Training model for patient {patient}")
+    typer.echo(f"  Data source: {data_source}")
     typer.echo(
         f"  Window: {window} steps, Horizon: {horizon} steps, Interval: {sample_interval} min"
     )
     typer.echo(f"  Predicting {prediction_minutes} minutes ahead")
+    if data_source == "simglucose":
+        typer.echo(f"  Simulation: {simulation_days} days")
 
     from src.helpers.experiment import Experiment
 
@@ -90,7 +111,9 @@ def train_simple(
         patient=patient,
         window=window,
         horizon=horizon,
-        min_per_measure=sample_interval,
+        data_source=data_source,
+        min_per_measure=interval,  # Pass None to let Experiment auto-detect
+        simulation_days=simulation_days,
         speed=3,
         enable_neptune=False,
     )
@@ -105,11 +128,22 @@ def train_full(
     horizon: int = typer.Option(
         6, "--horizon", "-h", help="Prediction horizon in steps"
     ),
+    data_source: str = typer.Option(
+        "ohio",
+        "--data-source",
+        "-d",
+        help="Data source: ohio (real patient) or simglucose (synthetic)",
+    ),
     interval: int = typer.Option(
         None,
         "--interval",
         "-i",
-        help="CGM sample interval in minutes (5 for Ohio, 3 for simglucose)",
+        help="CGM sample interval in minutes. Auto-detected if not set (ohio=5, simglucose=3)",
+    ),
+    simulation_days: int = typer.Option(
+        14,
+        "--simulation-days",
+        help="Days to simulate for simglucose training (default: 14). Ignored for Ohio.",
     ),
     neptune: bool = typer.Option(
         True, "--neptune/--no-neptune", help="Enable Neptune logging"
@@ -121,24 +155,34 @@ def train_full(
     """Run full experiment with all model comparisons.
 
     The sample interval determines prediction time: horizon * interval = minutes ahead.
+    For simglucose, the interval is auto-detected as 3 minutes (Dexcom sensor).
 
     Examples:
       # Ohio data (5-min intervals)
       uv run python cli.py train full -p 559 -w 12 -h 6
 
       # Simglucose data (3-min intervals)
-      uv run python cli.py train full -p adult#001 -w 12 -h 6 -i 3 --no-neptune
-    """
-    from config.settings import settings
+      uv run python cli.py train full -p adult#001 -w 12 -h 6 -d simglucose --no-neptune
 
-    sample_interval = interval or settings.SAMPLE_INTERVAL
+      # Simglucose with custom simulation duration
+      uv run python cli.py train full -p adult#001 -d simglucose --simulation-days 21 --no-neptune
+    """
+    from src.bgc_providers.factory import get_sample_interval
+
+    # Auto-detect interval from data source if not specified
+    sample_interval = (
+        interval if interval is not None else get_sample_interval(data_source)
+    )
     prediction_minutes = horizon * sample_interval
 
     typer.echo(f"Running full experiment for patient {patient}")
+    typer.echo(f"  Data source: {data_source}")
     typer.echo(
         f"  Window: {window} steps, Horizon: {horizon} steps, Interval: {sample_interval} min"
     )
     typer.echo(f"  Predicting {prediction_minutes} minutes ahead")
+    if data_source == "simglucose":
+        typer.echo(f"  Simulation: {simulation_days} days")
 
     from src.helpers.experiment import Experiment
 
@@ -146,7 +190,9 @@ def train_full(
         patient=patient,
         window=window,
         horizon=horizon,
-        min_per_measure=sample_interval,
+        data_source=data_source,
+        min_per_measure=interval,  # Pass None to let Experiment auto-detect
+        simulation_days=simulation_days,
         speed=speed,
         enable_neptune=neptune,
     )
@@ -414,34 +460,57 @@ def data_check():
 
 @data_app.command("generate")
 def data_generate(
-    patient: int = typer.Option(559, "--patient", "-p", help="Patient ID"),
+    patient: str = typer.Option("559", "--patient", "-p", help="Patient ID"),
     window: int = typer.Option(12, "--window", "-w", help="Window size"),
     horizon: int = typer.Option(6, "--horizon", "-h", help="Prediction horizon"),
+    data_source: str = typer.Option(
+        "ohio",
+        "--data-source",
+        "-d",
+        help="Data source: ohio (real patient) or simglucose (synthetic)",
+    ),
+    simulation_days: int = typer.Option(
+        14,
+        "--simulation-days",
+        help="Days to simulate for simglucose (default: 14). Ignored for Ohio.",
+    ),
 ):
-    """Generate feature dataset for a patient."""
-    typer.echo(f"Generating dataset for patient {patient}...")
+    """Generate feature dataset for a patient.
+
+    Examples:
+      # Ohio data
+      uv run python cli.py data generate -p 559
+
+      # Simglucose data
+      uv run python cli.py data generate -p adult#001 -d simglucose
+    """
+    typer.echo(f"Generating dataset for patient {patient} (source: {data_source})...")
 
     from src.helpers.experiment import create_tsfresh_dataframe
 
     # Generate train dataset
     train_params = {
-        "ohio_no": patient,
+        "data_source": data_source,
+        "patient": patient,
         "scope": "train",
         "train_ds_size": 0,
         "window_size": window,
         "prediction_horizon": horizon,
         "minimal_features": False,
+        "simulation_days": simulation_days if data_source == "simglucose" else 0,
     }
     create_tsfresh_dataframe(train_params)
 
     # Generate test dataset
     test_params = {
-        "ohio_no": patient,
+        "data_source": data_source,
+        "patient": patient,
         "scope": "test",
         "train_ds_size": 0,
         "window_size": window,
         "prediction_horizon": horizon,
         "minimal_features": False,
+        "simulation_days": simulation_days // 2 if data_source == "simglucose" else 0,
     }
     create_tsfresh_dataframe(test_params)
 
