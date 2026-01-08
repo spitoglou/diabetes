@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-01-08
+
+### Added
+- **Synced client command** (`serve synced-client`) for real-time timestamp streaming
+  - Starts from dataset reading closest to current time of day
+  - Uses current system timestamps instead of historical ones
+  - Supports `--patient` and `--verbose` options
+- **CLI parameter options** for patient and model configuration:
+  - `--patient, -p` option for `serve client` command
+  - `--patient, -p` option for `serve predict` command
+  - `--window, -w` option for `serve predict` command
+  - `--horizon, -H` option for `serve predict` command
+- **Simglucose results** for adult and adolescent patient simulations
+
+### Fixed
+- **Prediction watcher** now correctly passes window and horizon parameters to model loader
+
+### Changed
+- **Documentation** updated with new CLI parameter options
+
 ## [0.2.0] - 2026-01-08
 
 ### Added

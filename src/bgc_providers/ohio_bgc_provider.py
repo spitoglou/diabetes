@@ -16,6 +16,75 @@ class OhioBgcProvider(BgcProviderInterface):
         self.xml = objectify.parse(open(self.source_file))
         self.root = self.xml.getroot()
 
+    def _find_closest_time_index(self, target_time):
+        """Find the index of the glucose reading closest to the target time of day.
+
+        Uses circular time distance to handle midnight wrap-around properly.
+
+        Args:
+            target_time: datetime.time object representing the target time of day
+
+        Returns:
+            Index of the closest glucose reading
+        """
+        glucose_levels = self.get_glycose_levels()
+        target_minutes = target_time.hour * 60 + target_time.minute
+
+        closest_index = 0
+        min_distance = float("inf")
+
+        for i, glucose_event in enumerate(glucose_levels):
+            reading_time = self.ts_to_datetime(glucose_event.attrib["ts"]).time()
+            reading_minutes = reading_time.hour * 60 + reading_time.minute
+
+            # Calculate circular distance (handles midnight wrap-around)
+            direct_diff = abs(target_minutes - reading_minutes)
+            circular_diff = min(direct_diff, 1440 - direct_diff)
+
+            if circular_diff < min_distance:
+                min_distance = circular_diff
+                closest_index = i
+
+        return closest_index
+
+    def simulate_synced_glucose_stream(self, verbose=False):
+        """Simulate a glucose stream with current system timestamps.
+
+        Finds the closest time index to current time, then starts streaming from
+        that point with real-time timestamps. Wraps around to the beginning of
+        the dataset when reaching the end.
+
+        Args:
+            verbose: If True, log each glucose event
+
+        Yields:
+            Dict with timestamp, time (ISO), value, and patient ID
+        """
+        glucose_levels = self.get_glycose_levels()
+
+        # Find starting index based on current time
+        current_time = datetime.now(timezone.utc).time()
+        start_index = self._find_closest_time_index(current_time)
+        logger.info(f"Starting synced stream from index {start_index}")
+
+        index = start_index
+        while True:
+            glucose_event = glucose_levels[index]
+            logger.info(glucose_event.attrib) if verbose else ...
+
+            # Use current system time instead of historical timestamp
+            now = datetime.now(timezone.utc)
+            values = {
+                "timestamp": now.timestamp(),
+                "time": now.isoformat(),
+                "value": float(glucose_event.attrib["value"]),
+                "patient": self.patient,
+            }
+            yield values
+
+            # Move to next reading, wrap around if at end
+            index = (index + 1) % len(glucose_levels)
+
     def get_glycose_levels(self, start=0):
         glucose_levels_xml = self.root.getchildren()[0].getchildren()
         if start > 0:

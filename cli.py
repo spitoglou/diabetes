@@ -148,6 +148,30 @@ def serve_client(
     stream_data(send_to_service=True, verbose=verbose, patient=patient)
 
 
+@serve_app.command("synced-client")
+def serve_synced_client(
+    patient: str = typer.Option(
+        None, "--patient", "-p", help="Patient ID (default: from settings)"
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
+):
+    """Start the CGM data streaming client with real-time timestamps.
+
+    Streams CGM data using current system date/time instead of historical
+    timestamps. The sequence starts from the dataset reading closest to the
+    current time of day, making simulations appear as real-time data.
+    """
+    from config.settings import settings
+
+    patient_id = patient or settings.OHIO_ID
+    typer.echo(f"Starting synced CGM client for patient {patient_id}...")
+    typer.echo("Using current system time for timestamps")
+
+    from scripts.serving.client import stream_synced_data
+
+    stream_synced_data(send_to_service=True, verbose=verbose, patient=patient)
+
+
 @serve_app.command("predict")
 def serve_predict(
     patient: str = typer.Option(

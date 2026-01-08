@@ -55,5 +55,45 @@ def stream_data(
         print("Interrupted by the user")
 
 
+def stream_synced_data(
+    send_to_service: bool = True, verbose: bool = False, patient: str | None = None
+):
+    """Stream CGM data with current system timestamps.
+
+    Similar to stream_data(), but uses simulate_synced_glucose_stream() which
+    starts from the dataset reading closest to the current time of day and
+    sends readings with current system timestamps instead of historical ones.
+
+    Args:
+        send_to_service: Whether to send data to the FastAPI service. Defaults to True.
+        verbose: Whether to log detailed output. Defaults to False.
+        patient: Patient ID to stream data for. Defaults to settings.OHIO_ID.
+    """
+    patient_id = patient or settings.OHIO_ID
+    provider = OhioBgcProvider(ohio_no=patient_id)
+    stream = provider.simulate_synced_glucose_stream(verbose=verbose)
+
+    try:
+        while True:
+            values = next(stream)
+            logger.info(values) if verbose else ...
+
+            payload = create_fhir_json_from_reading(values)
+            logger.info(payload) if verbose else ...
+
+            if send_to_service:
+                r = requests.post(
+                    f"http://localhost:{settings.PORT}/bg/reading", data=payload
+                )
+                logger.info(r.status_code) if verbose else ...
+                logger.info(r.text) if verbose else ...
+                if r.status_code != 200:
+                    logger.warning(r.text)
+                logger.success(values)
+            sleep(settings.INTERVAL)
+    except KeyboardInterrupt:
+        print("Interrupted by the user")
+
+
 if __name__ == "__main__":
     stream_data(send_to_service=True, verbose=False)

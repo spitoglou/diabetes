@@ -38,9 +38,10 @@ uv run python cli.py info            # Show current configuration
 uv run python cli.py data check      # Verify Ohio dataset
 uv run python cli.py train simple    # Train model (simple)
 uv run python cli.py train full      # Train model (full experiment)
-uv run python cli.py serve start     # Start API server
-uv run python cli.py serve client    # Stream CGM data
-uv run python cli.py serve predict   # Run predictions
+uv run python cli.py serve start          # Start API server
+uv run python cli.py serve client         # Stream CGM data (historical timestamps)
+uv run python cli.py serve synced-client  # Stream CGM data (real-time timestamps)
+uv run python cli.py serve predict        # Run predictions
 ```
 
 ### Train Commands with Options
@@ -56,12 +57,16 @@ uv run python cli.py train full -p 559 -w 12 -h 6 --no-neptune --speed 2
 
 ### Serve Commands with Options
 
-The `serve client` and `serve predict` commands support patient-specific options:
+The `serve client`, `serve synced-client`, and `serve predict` commands support patient-specific options:
 
 ```bash
-# Stream data for a specific patient
+# Stream data for a specific patient (historical timestamps from dataset)
 uv run python cli.py serve client --patient 570
 uv run python cli.py serve client -p 570 -v  # verbose mode
+
+# Stream data with real-time timestamps (starts from closest time of day)
+uv run python cli.py serve synced-client --patient 570
+uv run python cli.py serve synced-client -p 570 -v  # verbose mode
 
 # Run predictions with custom parameters
 uv run python cli.py serve predict --patient 570 --window 12 --horizon 6

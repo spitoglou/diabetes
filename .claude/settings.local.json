@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Skill(agent-coordination)",
-      "SlashCommand(/openspec:archive)"
+      "SlashCommand(/openspec:archive)",
+      "SlashCommand(/openspec:proposal)"
     ]
   }
 }
