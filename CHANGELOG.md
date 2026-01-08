@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-01-08
+
+### Added
+- **Historical data generation** (`data generate-historical`) CLI command
+  - Generate simglucose CGM data for any date range
+  - Supports all virtual patients (adult, adolescent, child)
+  - Configurable insulin mode and random seed
+  - Dry-run mode for testing without server
+
+### Fixed
+- **Realistic CGM intervals** for streaming clients
+  - Ohio clients: 300s (5-minute Guardian sampling)
+  - Simglucose client: 180s (3-minute Dexcom sampling)
+  - Added `SIMGLUCOSE_INTERVAL` setting separate from `INTERVAL`
+
+### Changed
+- **Settings documentation** improved with CGM sensor sampling explanations
+
 ## [0.4.0] - 2026-01-08
 
 ### Added

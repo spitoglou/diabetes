@@ -90,6 +90,19 @@ uv run python cli.py serve simglucose-client -i basal-bolus --correction-factor 
 uv run python cli.py serve simglucose-client -i basal-bolus --pre-bolus-minutes 15 # Pre-bolus 15min before meals
 ```
 
+### Data Commands
+
+```bash
+# Generate historical simglucose data for a date range
+uv run python cli.py data generate-historical -p adult#001 -s 2025-12-01 -e 2025-12-31
+
+# Generate one week of data for a different patient
+uv run python cli.py data generate-historical -p adolescent#001 -s 2025-12-01 -e 2025-12-07
+
+# Dry run (generate without sending to server)
+uv run python cli.py data generate-historical -s 2025-12-01 -e 2025-12-31 --dry-run
+```
+
 ## Real-Time Prediction System
 
 Run in 3 separate terminals:

@@ -391,5 +391,111 @@ def data_mongo_test():
     typer.echo("MongoDB connection successful!")
 
 
+@data_app.command("generate-historical")
+def data_generate_historical(
+    patient: str = typer.Option(
+        "adult#001",
+        "--patient",
+        "-p",
+        help="Virtual patient name (e.g., adult#001, adolescent#001)",
+    ),
+    start: str = typer.Option(
+        ...,
+        "--start",
+        "-s",
+        help="Start date (YYYY-MM-DD)",
+    ),
+    end: str = typer.Option(
+        ...,
+        "--end",
+        "-e",
+        help="End date (YYYY-MM-DD)",
+    ),
+    seed: int = typer.Option(
+        42,
+        "--seed",
+        help="Random seed for reproducibility",
+    ),
+    insulin_mode: str = typer.Option(
+        "basal-bolus",
+        "--insulin-mode",
+        "-i",
+        help="Insulin mode: none, basal, basal-bolus",
+    ),
+    batch_size: int = typer.Option(
+        500,
+        "--batch-size",
+        "-b",
+        help="Log progress every N readings",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Generate data without sending to server",
+    ),
+):
+    """Generate historical simglucose data for a date range.
+
+    Runs a simglucose simulation and generates CGM readings with historical
+    timestamps, then sends them to the FastAPI server for storage in MongoDB.
+
+    Uses Dexcom CGM sensor model (3-minute sampling interval).
+
+    Examples:
+      # Generate December 2025 data for adult#001
+      uv run python cli.py data generate-historical -p adult#001 -s 2025-12-01 -e 2025-12-31
+
+      # Generate one week of data for adolescent#001
+      uv run python cli.py data generate-historical -p adolescent#001 -s 2025-12-01 -e 2025-12-07
+
+      # Dry run (don't send to server)
+      uv run python cli.py data generate-historical -s 2025-12-01 -e 2025-12-31 --dry-run
+    """
+    from datetime import datetime, timezone
+
+    # Parse dates
+    try:
+        start_date = datetime.strptime(start, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        end_date = datetime.strptime(end, "%Y-%m-%d").replace(
+            hour=23, minute=59, second=59, tzinfo=timezone.utc
+        )
+    except ValueError as e:
+        typer.echo(f"Error parsing dates: {e}", err=True)
+        typer.echo("Use format YYYY-MM-DD (e.g., 2025-12-01)", err=True)
+        raise typer.Exit(1)
+
+    if end_date < start_date:
+        typer.echo("Error: End date must be after start date", err=True)
+        raise typer.Exit(1)
+
+    # Calculate expected readings
+    total_minutes = (end_date - start_date).total_seconds() / 60
+    sample_time = 3  # Dexcom: 3 minutes
+    total_readings = int(total_minutes / sample_time)
+    days = (end_date - start_date).days + 1
+
+    typer.echo(f"Generating historical simglucose data")
+    typer.echo(f"=" * 45)
+    typer.echo(f"Patient:        {patient}")
+    typer.echo(f"Date range:     {start} to {end} ({days} days)")
+    typer.echo(f"Insulin mode:   {insulin_mode}")
+    typer.echo(f"Seed:           {seed}")
+    typer.echo(f"Total readings: {total_readings:,}")
+    typer.echo(f"Send to server: {not dry_run}")
+    typer.echo(f"=" * 45)
+
+    from scripts.utils.generate_historical_simglucose import generate_historical_data
+
+    generate_historical_data(
+        patient=patient,
+        start_date=start_date,
+        end_date=end_date,
+        seed=seed,
+        insulin_mode=insulin_mode,
+        send_to_server=not dry_run,
+        batch_size=batch_size,
+    )
+
+
 if __name__ == "__main__":
     app()

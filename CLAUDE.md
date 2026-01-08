@@ -63,6 +63,11 @@ uv run python cli.py serve simglucose-client -i basal-bolus --basal-rate 1.2  # 
 uv run python cli.py serve simglucose-client -i basal-bolus -B 15  # Pre-bolus 15min before meals
 uv run python cli.py serve predict -p 570 -w 12 -H 6     # Predict with custom window/horizon
 
+# Data commands
+uv run python cli.py data generate-historical -p adult#001 -s 2025-12-01 -e 2025-12-31  # Generate historical data
+uv run python cli.py data generate-historical -p adolescent#001 -s 2025-12-01 -e 2025-12-07  # One week
+uv run python cli.py data generate-historical -s 2025-12-01 -e 2025-12-31 --dry-run  # Without sending to server
+
 # Run tests
 uv run pytest tests/
 
